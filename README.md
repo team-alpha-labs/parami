@@ -1,4 +1,4 @@
-# Insureance
+# Insurance
 
 날씨 기반 자동 보상 플랫폼
 
