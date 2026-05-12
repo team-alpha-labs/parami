@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone *)",
+      "Bash(ls \"D:\\\\insurance\")",
+      "Read(//d/insurance/**)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "PowerShell(Get-ChildItem -Recurse \"D:\\\\team-alpha-service\\\\app\" | Where-Object { $_.PSIsContainer } | Select-Object FullName)"
+    ]
+  }
+}
