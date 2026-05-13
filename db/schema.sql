@@ -1,4 +1,4 @@
--- TRIGR 날씨 기반 자동 보상 플랫폼 DB 스키마
+-- PARAMI 날씨 기반 자동 보상 플랫폼 DB 스키마
 -- 작성일: 2026.05.11
 
 CREATE TABLE users (
