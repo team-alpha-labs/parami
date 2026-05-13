@@ -169,7 +169,8 @@ export const TRIGGER_CONDITIONS = {
   heat: 33,     // 기온 33도 이상
   cold: -12,    // 기온 -12도 이하
   dust: 50,     // PM2.5 50 이상
-  // snow: 기상청 PTY 코드 3(눈) 또는 4(소나기+눈)
+  // snow: 초단기실황(getUltraSrtNcst) PTY ∈ {2, 3, 6, 7} 로 판정
+  // (PTY=4는 초단기예보에만 존재, 실황에는 없음)
 }
 
 // 긍정조건 good_weather (봄가을 전용)
