@@ -24,6 +24,23 @@ CREATE TABLE user_accounts (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- plans: 구독 가격표 (basic/standard/premium 3티어)
+-- subscriptions.tier ENUM과 동일 값 사용해 일관성 유지
+CREATE TABLE plans (
+  id          INT          NOT NULL AUTO_INCREMENT,
+  tier        ENUM('basic','standard','premium') NOT NULL,
+  name        VARCHAR(50)  NOT NULL,
+  price       INT          NOT NULL,
+  description VARCHAR(255) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_tier (tier)
+);
+
+INSERT INTO plans (tier, name, price, description) VALUES
+  ('basic',    '베이직',    4900,  '기본 보상'),
+  ('standard', '스탠다드',  9900,  '중간 보상'),
+  ('premium',  '프리미엄',  19900, '최고 보상');
+
 CREATE TABLE subscriptions (
   id              INT      NOT NULL AUTO_INCREMENT,
   user_id         INT      NOT NULL,
