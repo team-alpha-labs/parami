@@ -1,5 +1,3 @@
-import { Tier } from '@/lib/plans'
-
 export type UserRow = {
   id: number
   email: string
@@ -16,47 +14,4 @@ export type UserAccountRow = {
   provider_id: string | null
   password: string | null
   created_at: Date
-}
-
-export type SubscriptionRow = {
-  id: number
-  user_id: number
-  tier: Tier
-  status: 'active' | 'cancelled'
-  next_billing_at: Date | null
-  started_at: Date
-  cancelled_at: Date | null
-}
-
-export type PaymentRow = {
-  id: number
-  user_id: number
-  subscription_id: number
-  amount: number
-  method: string
-  status: 'success' | 'fail' | 'cancelled'
-  toss_order_id: string
-  toss_payment_key: string | null
-  billing_year: number | null
-  billing_month: number | null
-  paid_at: Date
-}
-
-export type TriggerLogRow = {
-  id: number
-  weather_log_id: number
-  trigger_type: 'rain' | 'heat' | 'cold' | 'snow' | 'dust' | 'good_weather'
-  triggered_at: Date
-  triggered_date: Date
-}
-
-export type RewardLogRow = {
-  id: number
-  user_id: number
-  trigger_log_id: number
-  amount: number
-  tier_at_reward: Tier
-  reward_year: number
-  reward_month: number
-  rewarded_at: Date
 }
