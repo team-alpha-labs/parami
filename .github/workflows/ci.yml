@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npx tsc --noEmit
+
+      - run: npm run build
+        env:
+          DB_HOST: localhost
+          DB_PORT: 3306
+          DB_USER: ci
+          DB_PASSWORD: ci
+          DB_NAME: ci
+          JWT_SECRET: ci-build-secret
+          KMA_API_KEY: ci
+          AIRKOREA_API_KEY: ci
+          TOSS_CLIENT_KEY: ci
+          TOSS_SECRET_KEY: ci
+          SCHEDULER_SECRET: ci
