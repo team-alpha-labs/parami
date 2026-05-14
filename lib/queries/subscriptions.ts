@@ -6,7 +6,8 @@ import { RowDataPacket } from 'mysql2'
 import { SubscriptionRow } from '@/types/db'
 
 // 특정 user의 현재 active 구독 1건 조회 (없으면 null)
-// LIMIT 1: "1인 1active" 원칙 안전장치 (DB에 만약 active가 2개여도 1개만 반환)
+// ORDER BY started_at DESC, id DESC: active가 2개 이상일 경우 가장 최근 것 반환 (결정적 동작 보장)
+// LIMIT 1: "1인 1active" 원칙 안전장치
 export async function getActiveSubscriptionByUserId(
   userId: number
 ): Promise<SubscriptionRow | null> {
@@ -14,6 +15,7 @@ export async function getActiveSubscriptionByUserId(
     `SELECT id, user_id, tier, status, next_billing_at, started_at, cancelled_at
      FROM subscriptions
      WHERE user_id = ? AND status = 'active'
+     ORDER BY started_at DESC, id DESC
      LIMIT 1`,
     [userId]
   )
