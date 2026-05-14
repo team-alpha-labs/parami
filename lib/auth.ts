@@ -28,3 +28,9 @@ export function getSession(request: NextRequest): Session | null {
 export function requireUser(request: NextRequest): Session | null {
   return getSession(request)
 }
+
+export function requireAdmin(request: NextRequest): Session | null {
+  const session = getSession(request)
+  if (!session || session.role !== 'admin') return null
+  return session
+}
