@@ -37,9 +37,9 @@ CREATE TABLE plans (
 );
 
 INSERT INTO plans (tier, name, price, description) VALUES
-  ('basic',    '베이직',    4900,  '기본 보상'),
-  ('standard', '스탠다드',  9900,  '중간 보상'),
-  ('premium',  '프리미엄',  19900, '최고 보상');
+  ('basic',    '베이직',    7400,  '월 800원 보상금'),
+  ('standard', '스탠다드',  12700, '월 1,400원 보상금'),
+  ('premium',  '프리미엄',  20600, '월 2,300원 보상금');
 
 CREATE TABLE subscriptions (
   id              INT      NOT NULL AUTO_INCREMENT,
