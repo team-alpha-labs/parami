@@ -78,7 +78,7 @@ For multi-step tasks, state a brief plan:
 | Frontend / Backend | Next.js (App Router) |
 | DB | MySQL + mysql2 |
 | 배포 | GCP |
-| 결제 | 토스페이먼츠 단건 결제 |
+| 결제 | 토스페이먼츠 단건 결제 (월 단위 구독 형태로 운영, 자동 갱신 X) |
 | 로그인 | 자체 JWT (소셜 로그인은 추후 추가) |
 | 스케줄러 | GCP Cloud Scheduler + Next.js API Route |
 | 스타일 | Tailwind CSS |
@@ -105,11 +105,17 @@ parami/
 ├── components/               # 공통 컴포넌트
 ├── lib/
 │   ├── db.ts                 # MySQL 연결 (mysql2/promise pool)
-│   ├── auth.ts               # JWT 유틸 (sign / verify)
-│   ├── weather.ts            # 기상청 API 파싱
-│   └── conditions.ts         # 트리거 조건값 상수 (하드코딩)
+│   ├── auth.ts               # JWT 유틸 (sign / verify / getSession / requireUser / requireAdmin)
+│   ├── oauth.ts              # 카카오 / 구글 OAuth 헬퍼 (스캐폴드, 키 설정 후 활성화)
+│   ├── weather.ts            # 기상청 + 에어코리아 API 호출·파싱 (fetchWeatherSnapshot)
+│   ├── conditions.ts         # 트리거 조건값 상수 (하드코딩)
+│   ├── plans.ts              # 구독 가격표 DB 조회
+│   ├── api.ts                # 응답 헬퍼 ok() / err()
+│   └── queries/              # 테이블별 DB 쿼리 함수 분리 (users.ts 등)
 ├── hooks/                    # Custom Hooks
-└── types/                    # TypeScript 타입 정의
+├── types/                    # TypeScript 타입 정의 (db.ts 포함)
+├── db/                       # schema.sql, schema.erd.json
+└── docs/                     # SETUP.md, API.md, proposal.md 등 운영 문서
 ```
 
 ---
@@ -117,29 +123,35 @@ parami/
 ### API 목록
 
 ```
-[ 인증 ]
-POST /api/auth/signup           # 회원가입
-POST /api/auth/login            # 로그인
-POST /api/auth/logout           # 로그아웃
-GET  /api/auth/me               # 내 정보 조회
+[ 인증 ]  ✅ 구현됨
+POST   /api/auth/signup           # 회원가입
+POST   /api/auth/login            # 로그인
+POST   /api/auth/logout           # 로그아웃
+GET    /api/auth/me               # 내 정보 조회
+PATCH  /api/auth/profile          # 내 정보 수정 (이름)
+DELETE /api/auth/withdraw         # 회원 탈퇴 (cascade)
 
-[ 결제/구독 ]
-GET  /api/plans                 # 티어 목록 조회
-POST /api/payments/confirm      # 토스 결제 승인 + 구독 생성 동시 처리
-GET  /api/payments/me           # 내 결제 내역
-GET  /api/subscriptions/me      # 내 구독 상태 조회
-PATCH /api/subscriptions/change-tier  # 티어 변경
-PATCH /api/subscriptions/cancel       # 구독 해지
+[ OAuth 콜백 ]  ⏳ 추후 (라우트 스캐폴드만 있고 키 미설정)
+GET    /api/auth/kakao/callback
+GET    /api/auth/google/callback
+
+[ 결제/구독 ]  ⏳ 예정
+GET   /api/plans                       # 티어 목록 조회                ✅ 구현됨
+POST  /api/payments/confirm            # 토스 결제 승인 + 구독 생성 동시 처리
+GET   /api/payments/me                 # 내 결제 내역
+GET   /api/subscriptions/me            # 내 구독 상태 조회
+PATCH /api/subscriptions/change-tier   # 티어 변경
+PATCH /api/subscriptions/cancel        # 구독 해지
 
 [ 날씨/보상 ]
-GET /api/weather/current        # 현재 날씨 조회
-GET /api/rewards/me             # 내 보상 내역
-GET /api/rewards/summary        # 내 누적 보상 요약
+GET /api/weather/current        # 현재 날씨 조회                       ✅ 구현됨
+GET /api/rewards/me             # 내 보상 내역                         ⏳ 예정
+GET /api/rewards/summary        # 내 누적 보상 요약                    ⏳ 예정
 
-[ 스케줄러 ]
-POST /api/scheduler/weather-check  # Cloud Scheduler 호출 → 날씨 수집 → 트리거 → 보상
+[ 스케줄러 ]  ⏳ 예정
+POST /api/scheduler/weather-check  # Cloud Scheduler → 날씨 수집 → 트리거 → 보상
 
-[ 관리자 ]
+[ 관리자 ]  ⏳ 예정
 GET /api/admin/users            # 유저 목록
 GET /api/admin/subscriptions    # 구독 현황
 GET /api/admin/payments         # 결제 내역
@@ -153,10 +165,11 @@ GET /api/admin/rewards          # 보상 지급 내역
 
 | 담당 | 이름 | 기능 |
 | --- | --- | --- |
-| 백1 | (이름) | 스케줄러 + 트리거 + 보상 지급 + 관리자 조회 API |
-| 백2 | (이름) | 인증 + 결제 + 구독 |
-| 프1 | (이름) | 소비자 페이지 전체 |
-| 프2 | (이름) | 관리자 페이지 |
+| 백1 (팀장) | 우석 | 스케줄러 + 트리거 + 보상 지급 + 관리자 조회 API |
+| 백2 | 소라 | 결제 + 구독 + 보상 조회 |
+| 백3 | 영현 | 인증 (자체 + OAuth) |
+| 프1 | (미정) | 소비자 페이지 전체 |
+| 프2 | (미정) | 관리자 페이지 |
 
 ---
 
@@ -191,7 +204,8 @@ export const MAX_REWARD_PER_MONTH = 10
 
 ```
 users              # 회원 (balance 컬럼으로 포인트 관리)
-user_accounts      # 로그인 방식 (현재 local만 사용, 소셜 확장 예정)
+user_accounts      # 로그인 방식 (local / kakao / google)
+plans              # 구독 가격표 (basic / standard / premium, 가격·설명)
 subscriptions      # 구독 (1인 1active, 현재 티어 및 구독 상태 관리)
 payments           # 결제 내역 (toss_payment_key NULL 허용)
 weather_logs       # 날씨 API 수신 기록 (매 시간 누적, 중복 체크 없음)
@@ -284,6 +298,16 @@ DB_NAME=
 
 # JWT
 JWT_SECRET=
+
+# 카카오 OAuth (추후 사용 — 현재 미설정)
+KAKAO_CLIENT_ID=
+KAKAO_CLIENT_SECRET=
+KAKAO_REDIRECT_URI=http://localhost:3000/api/auth/kakao/callback
+
+# 구글 OAuth (추후 사용 — 현재 미설정)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
 
 # 기상청 API
 KMA_API_KEY=
