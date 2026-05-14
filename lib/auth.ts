@@ -11,12 +11,20 @@ export function verifyToken(token: string): jwt.JwtPayload | string {
   return jwt.verify(token, SECRET)
 }
 
-export function getSession(request: NextRequest): jwt.JwtPayload | null {
+export type Session = jwt.JwtPayload & { uid: number; role: 'user' | 'admin' }
+
+export function getSession(request: NextRequest): Session | null {
   const token = request.cookies.get('token')?.value
   if (!token) return null
   try {
-    return verifyToken(token) as jwt.JwtPayload
+    const payload = verifyToken(token) as jwt.JwtPayload
+    if (typeof payload === 'string' || typeof payload.uid !== 'number') return null
+    return payload as Session
   } catch {
     return null
   }
+}
+
+export function requireUser(request: NextRequest): Session | null {
+  return getSession(request)
 }
