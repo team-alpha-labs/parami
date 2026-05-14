@@ -16,3 +16,7 @@ export const GOOD_WEATHER_CONDITIONS = {
 }
 
 export const MAX_REWARD_PER_MONTH = 10
+
+// 초단기실황 PTY 코드 중 눈으로 간주하는 값들
+// readonly number[]로 두면 Array.includes() 호출 시 타입이 편함
+export const SNOW_PTY_CODES: readonly number[] = [2, 3, 6, 7]
