@@ -1,6 +1,8 @@
 // 기상청(초단기실황) + 에어코리아(시도별 측정) API를 호출해서 현재 날씨 한 묶음으로 반환
 // 사용처: GET /api/weather/current, POST /api/scheduler/weather-check
 
+import { SNOW_PTY_CODES } from '@/lib/conditions'
+
 const KMA_BASE = 'https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst'
 const AIR_BASE = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty'
 
@@ -13,6 +15,7 @@ export type WeatherSnapshot = {
   temp_c: number | null
   wind_ms: number | null
   pty: number | null
+  snow: boolean
   pm25: number | null
   pm10: number | null
   raw_kma: unknown
@@ -48,6 +51,7 @@ export async function fetchWeatherSnapshot(): Promise<WeatherSnapshot> {
     temp_c: kma.temp_c,
     wind_ms: kma.wind_ms,
     pty: kma.pty,
+    snow: kma.pty !== null && SNOW_PTY_CODES.includes(kma.pty),
     pm25: air.pm25,
     pm10: air.pm10,
     raw_kma: rawKma,
@@ -118,13 +122,23 @@ function extractKmaItems(raw: unknown): KmaItem[] {
   return Array.isArray(arr) ? arr : []
 }
 
-type AirItem = { pm25Value?: string; pm10Value?: string }
+type AirItem = { pm25Value?: string; pm10Value?: string; dataTime?: string }
 
 function parseAir(raw: unknown): { pm25: number | null; pm10: number | null } {
   const items = extractAirItems(raw)
+  if (items.length === 0) return { pm25: null, pm10: null }
+
+  // 측정소별로 dataTime이 다를 수 있어 가장 최신 시각의 측정값만 평균
+  const latest = items
+    .map((i) => i.dataTime)
+    .filter((t): t is string => !!t)
+    .sort()
+    .at(-1)
+  const filtered = latest ? items.filter((i) => i.dataTime === latest) : items
+
   return {
-    pm25: averageNumeric(items.map((i) => i.pm25Value)),
-    pm10: averageNumeric(items.map((i) => i.pm10Value)),
+    pm25: averageNumeric(filtered.map((i) => i.pm25Value)),
+    pm10: averageNumeric(filtered.map((i) => i.pm10Value)),
   }
 }
 
