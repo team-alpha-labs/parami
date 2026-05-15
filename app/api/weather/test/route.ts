@@ -19,8 +19,30 @@ export async function GET() {
   const baseDate = `${yyyy}${mm}${dd}`
   const baseTime = `${hh}00`
 
-  const kmaUrl = `https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?authKey=${kmaKey}&numOfRows=10&pageNo=1&base_date=${baseDate}&base_time=${baseTime}&nx=60&ny=127&dataType=JSON`
-  const airUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${airKey}&returnType=json&numOfRows=10&pageNo=1&sidoName=서울&ver=1.0`
+  // 공공 API 키에 +, /, = 가 포함될 수 있어 URLSearchParams로 안전하게 인코딩
+  const kmaUrl =
+    'https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?' +
+    new URLSearchParams({
+      authKey: kmaKey,
+      numOfRows: '10',
+      pageNo: '1',
+      base_date: baseDate,
+      base_time: baseTime,
+      nx: '60',
+      ny: '127',
+      dataType: 'JSON',
+    }).toString()
+
+  const airUrl =
+    'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?' +
+    new URLSearchParams({
+      serviceKey: normalizeServiceKey(airKey),
+      returnType: 'json',
+      numOfRows: '10',
+      pageNo: '1',
+      sidoName: '서울',
+      ver: '1.0',
+    }).toString()
 
   try {
     const [kmaRes, airRes] = await Promise.all([
@@ -45,5 +67,13 @@ function safeParse(s: string) {
     return JSON.parse(s)
   } catch {
     return s
+  }
+}
+
+function normalizeServiceKey(key: string): string {
+  try {
+    return key.includes('%') ? decodeURIComponent(key) : key
+  } catch {
+    return key
   }
 }
