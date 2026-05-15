@@ -50,17 +50,24 @@ export async function POST(request: NextRequest) {
       }),
     )
 
-    // 5) 보상 지급: 신규 INSERT된 트리거만 처리 (중복 트리거는 이전 회차에서 이미 처리됨)
+    // 5) 보상 지급: 당일 트리거 모두 처리 — 신규/기존 무관하게 멱등 재시도
+    // 이전 회차에서 trigger_logs는 INSERT됐으나 보상 단계가 실패한 케이스를
+    // 다음 회차에서 복구하기 위해 inserted=false(기존 행)도 함께 처리.
+    // reward_logs UNIQUE(user_id, trigger_log_id)가 이미 지급된 유저는 거르므로 안전.
     // 자격 = active 구독 + 최근 결제 success / 월 10회 캡 / UNIQUE(user_id, trigger_log_id)
     // 처리는 순차로 — 같은 유저에게 시간 내 여러 트리거가 발동될 때 캡 카운트 race 회피
     const rewards = []
     for (const t of triggers) {
-      if (!t.inserted || t.trigger_log_id === null) continue
+      if (t.trigger_log_id === null) continue
       const summary = await payoutForTrigger(
         t.trigger_log_id,
         snap.measured_at,
       )
-      rewards.push({ trigger_log_id: t.trigger_log_id, ...summary })
+      rewards.push({
+        trigger_log_id: t.trigger_log_id,
+        inserted: t.inserted,
+        ...summary,
+      })
     }
 
     // 6) 응답: 어떤 행이 들어갔는지 + 핵심 값 요약 (디버깅·모니터링용)

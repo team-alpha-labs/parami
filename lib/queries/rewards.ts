@@ -66,7 +66,9 @@ export async function getRewardSummaryByUserId(
 
 // 보상 지급 대상자 = active 구독 + 그 구독의 가장 최근 결제가 success
 // 신규 가입 후 결제 없는 유저, 최근 결제가 fail/cancelled인 유저는 제외
-// 1인 1active 원칙이지만 안전장치로 GROUP BY 안 쓰고 그대로 반환 (route에서 user_id 기준 처리)
+//
+// 1인 1active가 컨벤션이지만 DB UNIQUE 제약은 없어, 안전장치로 유저당 1행만 반환:
+// 같은 user_id에 active가 2개 이상이면 가장 최근 started_at 행만 선택 (이중 지급 차단)
 export type RewardEligibleRow = {
   user_id: number
   subscription_id: number
@@ -77,6 +79,12 @@ export async function getEligibleUsersForReward(): Promise<RewardEligibleRow[]> 
     `SELECT s.user_id, s.id AS subscription_id, s.tier
      FROM subscriptions s
      WHERE s.status = 'active'
+       AND s.id = (
+         SELECT s2.id FROM subscriptions s2
+         WHERE s2.user_id = s.user_id AND s2.status = 'active'
+         ORDER BY s2.started_at DESC, s2.id DESC
+         LIMIT 1
+       )
        AND (
          SELECT p.status FROM payments p
          WHERE p.subscription_id = s.id
