@@ -24,6 +24,7 @@ export type SubscriptionRow = {
   next_billing_at: Date | null
   started_at: Date
   cancelled_at: Date | null
+  pending_tier: 'basic' | 'standard' | 'premium' | null
 }
 
 export type PaymentRow = {

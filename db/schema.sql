@@ -49,6 +49,9 @@ CREATE TABLE subscriptions (
   next_billing_at DATETIME NULL,
   started_at      DATETIME NOT NULL DEFAULT NOW(),
   cancelled_at    DATETIME NULL,
+  -- pending_tier: 티어 변경 요청 시 예약된 새 티어 저장
+  -- 다음 결제(/api/payments/confirm) 시점에 tier로 적용 + pending_tier는 NULL로 리셋
+  pending_tier    ENUM('basic','standard','premium') NULL,
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
