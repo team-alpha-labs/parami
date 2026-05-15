@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { requireUser } from '@/lib/auth'
 import { ok, err } from '@/lib/api'
 import { getPaymentsByUserId } from '@/lib/queries/payments'
 
@@ -8,8 +8,8 @@ import { getPaymentsByUserId } from '@/lib/queries/payments'
 export async function GET(request: NextRequest) {
   try {
     // 쿠키에서 토큰 추출 + 검증
-    const session = getSession(request)
-    if (!session) return err('로그인이 필요합니다', 401)
+    const session = requireUser(request)
+    if (!session) return err('로그인이 필요합니다.', 401)
 
     // 토큰의 uid로 본인 결제 내역 조회
     const payments = await getPaymentsByUserId(session.uid)
@@ -18,6 +18,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     // 서버 로그엔 상세, 클라이언트엔 generic 메시지 (보안)
     console.error('GET /api/payments/me error:', error)
-    return err('결제 내역 조회 실패', 500)
+    return err('결제 내역 조회 실패.', 500)
   }
 }

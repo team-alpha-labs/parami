@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     // 1) 인증 확인
     const session = requireUser(request)
-    if (!session) return err('로그인이 필요합니다', 401)
+    if (!session) return err('로그인이 필요합니다.', 401)
 
     // 2) body 파싱 + 필수 필드 검증
     const body = (await request.json().catch(() => null)) as {
@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
     } | null
 
     if (!body?.paymentKey || !body.orderId || !body.amount || !body.tier) {
-      return err('paymentKey, orderId, amount, tier는 필수입니다', 400)
+      return err('paymentKey, orderId, amount, tier는 필수입니다.', 400)
     }
 
     // 3) tier 값 유효성 (DB ENUM 위반 방지)
     if (!VALID_TIERS.includes(body.tier as Tier)) {
-      return err('tier는 basic/standard/premium 중 하나여야 합니다', 400)
+      return err('tier는 basic/standard/premium 중 하나여야 합니다.', 400)
     }
     const tier = body.tier as Tier
 
@@ -43,16 +43,16 @@ export async function POST(request: NextRequest) {
     // 클라이언트가 "premium"이라고 주장하면서 amount는 7,400원으로 보내는 공격 차단
     // 서버 측 가격(DB plans 테이블)이 권위
     const plan = await findPlanByTier(tier)
-    if (!plan) return err('유효하지 않은 티어입니다', 400)
+    if (!plan) return err('유효하지 않은 티어입니다.', 400)
     if (plan.price !== body.amount) {
-      return err('결제 금액이 티어 가격과 일치하지 않습니다', 400)
+      return err('결제 금액이 티어 가격과 일치하지 않습니다.', 400)
     }
 
     // 5) TOSS_SECRET_KEY 환경변수 확인
     const tossSecret = process.env.TOSS_SECRET_KEY
     if (!tossSecret) {
       console.error('TOSS_SECRET_KEY 환경변수 누락')
-      return err('결제 서버 설정 오류', 500)
+      return err('결제 서버 설정 오류.', 500)
     }
 
     // 6) 토스 API 호출 — Basic Auth 헤더는 base64(SECRET:)
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     if (!tossRes.ok) {
       const tossError = await tossRes.json().catch(() => ({}))
       console.error('Toss API confirm 실패:', tossRes.status, tossError)
-      return err('결제 검증 실패', 400)
+      return err('결제 검증 실패.', 400)
     }
 
     // 토스가 검증 OK → 결제 정말 발생한 것
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       try {
         await cancelTossPayment(body.paymentKey, '서버 DB 처리 실패로 인한 자동 환불')
         console.log(`[refund] orderId=${body.orderId} 환불 처리 완료`)
-        return err('결제 처리 중 오류가 발생해 자동 환불되었습니다', 500)
+        return err('결제 처리 중 오류가 발생해 자동 환불되었습니다.', 500)
       } catch (refundError) {
         // 환불 자체도 실패 → 사용자 돈 묶임. 운영자 수동 처리 필수
         // 로그에 명확히 남겨야 운영팀이 추적 가능
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
           { orderId: body.orderId, paymentKey: body.paymentKey, refundError }
         )
         return err(
-          '결제 처리 실패. 환불도 자동 처리되지 않아 고객센터 문의 바랍니다',
+          '결제 처리 실패. 환불도 자동 처리되지 않아 고객센터 문의 바랍니다.',
           500
         )
       }
@@ -125,6 +125,6 @@ export async function POST(request: NextRequest) {
     // body 파싱 / 토스 API 네트워크 오류 등 — 토스 confirm 호출 전 또는 호출 중 에러
     // 이 단계에선 결제가 우리 시스템에 확정되지 않았으므로 환불 불필요
     console.error('POST /api/payments/confirm error:', error)
-    return err('결제 처리 실패', 500)
+    return err('결제 처리 실패.', 500)
   }
 }

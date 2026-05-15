@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   // 1) 인증: SCHEDULER_SECRET 헤더 검증 (weather-check와 동일 패턴)
   // 일반 사용자 호출 시 본인 외 active 모두 만료시킬 수 있어 보안 중요
   if (!isAuthorized(request)) {
-    return err('스케줄러 인증 실패', 401)
+    return err('스케줄러 인증 실패.', 401)
   }
 
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // 5xx 반환 시 Cloud Scheduler가 지수 백오프로 자동 재시도
     console.error('POST /api/scheduler/expire-subscriptions error:', error)
-    return err('만료 처리 실패', 500)
+    return err('만료 처리 실패.', 500)
   }
 }
 
