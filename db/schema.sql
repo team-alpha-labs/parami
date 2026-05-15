@@ -45,7 +45,9 @@ CREATE TABLE subscriptions (
   id              INT      NOT NULL AUTO_INCREMENT,
   user_id         INT      NOT NULL,
   tier            ENUM('basic','standard','premium') NOT NULL,
-  status          ENUM('active','cancelled') NOT NULL DEFAULT 'active',
+  -- expired: next_billing_at 지나도 결제 안 한 경우 스케줄러가 자동 전환
+  -- cancelled: 사용자 본인 의지로 해지
+  status          ENUM('active','cancelled','expired') NOT NULL DEFAULT 'active',
   next_billing_at DATETIME NULL,
   started_at      DATETIME NOT NULL DEFAULT NOW(),
   cancelled_at    DATETIME NULL,

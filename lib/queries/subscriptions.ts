@@ -23,6 +23,18 @@ export async function getActiveSubscriptionByUserId(
   return (rows[0] as SubscriptionRow) ?? null
 }
 
+// next_billing_at 지났는데 status='active' 상태인 구독을 'expired'로 일괄 변경
+// Cloud Scheduler가 매일 호출 → 데이터 정합성 유지 (좀비 active 방지)
+// 반환: 만료 처리된 행 개수
+export async function expireOverdueSubscriptions(): Promise<number> {
+  const [result] = await pool.query<ResultSetHeader>(
+    `UPDATE subscriptions
+     SET status = 'expired'
+     WHERE status = 'active' AND next_billing_at < NOW()`
+  )
+  return result.affectedRows
+}
+
 // 특정 user의 active 구독에 pending_tier(예약 티어) 설정
 // 다음 결제 시점에 tier로 적용됨 (즉시 변경 X)
 // affectedRows 0이면 null 반환 (active 구독 없음)
