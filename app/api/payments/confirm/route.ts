@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth'
 import { ok, err } from '@/lib/api'
 import { findPlanByTier } from '@/lib/plans'
 import { processConfirmedPayment } from '@/lib/queries/payments'
+import { getActiveSubscriptionByUserId } from '@/lib/queries/subscriptions'
 import { cancelTossPayment } from '@/lib/toss'
 
 // 허용 티어 (DB ENUM과 일치)
@@ -15,6 +16,13 @@ const TOSS_CONFIRM_URL = 'https://api.tosspayments.com/v1/payments/confirm'
 // POST /api/payments/confirm
 // 프론트가 토스 결제창에서 받은 (paymentKey, orderId, amount, tier)을 전달
 // 백엔드가 토스 API로 결제 진위 검증 후 payments + subscriptions DB 처리 (트랜잭션)
+//
+// 서버 권위 원칙 (PR-2 리뷰 #3 반영):
+//   - 결제 시점에 적용할 tier는 "서버가 결정한 effectiveTier"
+//   - active 있고 pending_tier 있음 → pending_tier 우선 (티어 변경 예약 적용)
+//   - active 있고 pending_tier 없음 → 기존 tier 유지 (단순 갱신)
+//   - active 없음 → body.tier (신규 가입)
+//   - 클라이언트가 보낸 body.tier는 신규 가입 케이스에만 권위. 그 외엔 무시.
 export async function POST(request: NextRequest) {
   try {
     // 1) 인증 확인
@@ -33,29 +41,40 @@ export async function POST(request: NextRequest) {
       return err('paymentKey, orderId, amount, tier는 필수입니다.', 400)
     }
 
-    // 3) tier 값 유효성 (DB ENUM 위반 방지)
+    // 3) body.tier 형식 유효성 (DB ENUM 위반 방지)
     if (!VALID_TIERS.includes(body.tier as Tier)) {
       return err('tier는 basic/standard/premium 중 하나여야 합니다.', 400)
     }
-    const tier = body.tier as Tier
 
-    // 4) amount 변조 검증
-    // 클라이언트가 "premium"이라고 주장하면서 amount는 7,400원으로 보내는 공격 차단
+    // 4) 서버 권위 effectiveTier 결정
+    // active 구독 상태를 서버가 직접 조회 후 결정 (프론트 신뢰 X)
+    const currentSub = await getActiveSubscriptionByUserId(session.uid)
+    let effectiveTier: Tier
+    if (currentSub) {
+      // 기존 구독자: pending_tier 있으면 그게 새 티어, 없으면 기존 유지
+      effectiveTier = (currentSub.pending_tier ?? currentSub.tier) as Tier
+    } else {
+      // 신규 가입: body.tier 사용
+      effectiveTier = body.tier as Tier
+    }
+
+    // 5) amount 변조 검증 (effectiveTier 기준 가격과 대조)
+    // 클라이언트가 "premium" 주장하면서 amount는 7,400원으로 보내는 공격 차단
     // 서버 측 가격(DB plans 테이블)이 권위
-    const plan = await findPlanByTier(tier)
+    const plan = await findPlanByTier(effectiveTier)
     if (!plan) return err('유효하지 않은 티어입니다.', 400)
     if (plan.price !== body.amount) {
       return err('결제 금액이 티어 가격과 일치하지 않습니다.', 400)
     }
 
-    // 5) TOSS_SECRET_KEY 환경변수 확인
+    // 6) TOSS_SECRET_KEY 환경변수 확인
     const tossSecret = process.env.TOSS_SECRET_KEY
     if (!tossSecret) {
       console.error('TOSS_SECRET_KEY 환경변수 누락')
       return err('결제 서버 설정 오류.', 500)
     }
 
-    // 6) 토스 API 호출 — Basic Auth 헤더는 base64(SECRET:)
+    // 7) 토스 API 호출 — Basic Auth 헤더는 base64(SECRET:)
     // 토스 인증 방식: 시크릿키 뒤에 ":" 붙이고 base64 인코딩 (RFC 7617)
     const authHeader = 'Basic ' + Buffer.from(tossSecret + ':').toString('base64')
 
@@ -72,7 +91,7 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    // 7) 토스 응답 처리
+    // 8) 토스 응답 처리
     // 200 외의 응답은 결제 거부/오류 — 클라이언트엔 generic 메시지
     if (!tossRes.ok) {
       const tossError = await tossRes.json().catch(() => ({}))
@@ -83,7 +102,7 @@ export async function POST(request: NextRequest) {
     // 토스가 검증 OK → 결제 정말 발생한 것
     // 응답 body는 결제 상세 정보 (paymentKey, orderId, totalAmount, status 등)
 
-    // 8) DB 트랜잭션 처리 (payments INSERT + subscriptions INSERT/UPDATE)
+    // 9) DB 트랜잭션 처리 (payments INSERT + subscriptions INSERT/UPDATE)
     // toss_order_id UNIQUE 제약으로 동일 orderId 두 번 확정 차단
     //
     // ⚠️ 여기서 실패하면 사용자 돈은 토스에 잡혀있지만 우리 DB엔 없음 → 자동 환불 처리
@@ -91,7 +110,7 @@ export async function POST(request: NextRequest) {
     try {
       const result = await processConfirmedPayment(
         session.uid,
-        tier,
+        effectiveTier,
         body.amount,
         body.orderId,
         body.paymentKey

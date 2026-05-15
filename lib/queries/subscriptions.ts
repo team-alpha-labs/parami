@@ -1,5 +1,10 @@
 // 구독(subscriptions) DB 조회 함수 모음
 // 1인 1active 구독 원칙 (CLAUDE.md 참고)
+//
+// 시간 처리 컨벤션 (PR-2 리뷰 #4 반영):
+//   subscriptions의 시각 컬럼(started_at, cancelled_at, next_billing_at)은 UTC 기준 저장
+//   UTC_TIMESTAMP()로 명시 → 서버 timezone 설정에 영향 받지 않음
+//   (참고: payments.billing_year/billing_month, reward_logs.reward_year/reward_month는 KST 기준 — 사용자 친화적 월 표시용)
 
 import pool from '@/lib/db'
 import { RowDataPacket, ResultSetHeader } from 'mysql2'
@@ -61,9 +66,10 @@ export async function setPendingTierByUserId(
 export async function cancelSubscriptionByUserId(
   userId: number
 ): Promise<SubscriptionRow | null> {
+  // cancelled_at: UTC 명시 (subscriptions 시각 컬럼 통일)
   const [result] = await pool.query<ResultSetHeader>(
     `UPDATE subscriptions
-     SET status = 'cancelled', cancelled_at = NOW()
+     SET status = 'cancelled', cancelled_at = UTC_TIMESTAMP()
      WHERE user_id = ? AND status = 'active'`,
     [userId]
   )
