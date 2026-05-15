@@ -30,12 +30,13 @@ export async function getActiveSubscriptionByUserId(
 
 // next_billing_at 지났는데 status='active' 상태인 구독을 'expired'로 일괄 변경
 // Cloud Scheduler가 매일 호출 → 데이터 정합성 유지 (좀비 active 방지)
+// next_billing_at은 UTC 저장이므로 비교도 UTC_TIMESTAMP()로 일관 (NOW()는 서버 timezone 의존)
 // 반환: 만료 처리된 행 개수
 export async function expireOverdueSubscriptions(): Promise<number> {
   const [result] = await pool.query<ResultSetHeader>(
     `UPDATE subscriptions
      SET status = 'expired'
-     WHERE status = 'active' AND next_billing_at < NOW()`
+     WHERE status = 'active' AND next_billing_at < UTC_TIMESTAMP()`
   )
   return result.affectedRows
 }
