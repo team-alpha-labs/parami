@@ -1,10 +1,9 @@
 // 결제(payments) DB 조회 함수 모음
 //
 // 시간 처리 컨벤션 (PR-2 리뷰 #4 반영):
-//   subscriptions의 시각 컬럼은 UTC_TIMESTAMP()로 UTC 명시 저장 (서버 timezone 무관)
-//   payments.billing_year/billing_month는 JS에서 KST로 계산
-//     → 사용자에게 "5월 결제 / 6월 결제"가 한국 시간 기준으로 표시되도록
-//   두 정책 모두 명시적 — 서버 timezone 설정 변경 시에도 동작 일관
+//   subscriptions/payments의 시각 컬럼(started_at, next_billing_at, paid_at, cancelled_at)은
+//   모두 KST 저장 — DB 서버 UTC 가정 → NOW()에 +9 HOUR 더해 변환
+//   billing_year/billing_month도 JS에서 KST 계산 → timestamp와 시간대 일관성 확보
 
 import pool from '@/lib/db'
 import { RowDataPacket, ResultSetHeader } from 'mysql2'
