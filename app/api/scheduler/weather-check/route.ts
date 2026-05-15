@@ -2,11 +2,13 @@ import { NextRequest } from 'next/server'
 import { err, ok } from '@/lib/api'
 import { fetchWeatherSnapshot } from '@/lib/weather'
 import { insertWeatherLog } from '@/lib/queries/weather'
+import { evaluateTriggers, toKstDateString } from '@/lib/triggers'
+import { insertTriggerLog } from '@/lib/queries/triggers'
 
 // POST /api/scheduler/weather-check
 // 호출 주체: GCP Cloud Scheduler (매 시간 KST)
-// 동작 (1단계): 외부 API 호출 → weather_logs INSERT
-// 향후 추가 예정: 트리거 판정(2단계) + 보상 지급(3단계)
+// 동작 (1·2·3단계): 외부 API → weather_logs INSERT → 트리거 판정 → trigger_logs INSERT
+// 향후 추가 예정: 보상 지급(4단계)
 export async function POST(request: NextRequest) {
   // 1) 인증: SCHEDULER_SECRET 헤더가 일치해야 진행
   // 외부에서 막 호출당하면 API 할당량 소모 + DB 오염 가능 → 시크릿으로 차단
@@ -22,7 +24,24 @@ export async function POST(request: NextRequest) {
     // 3) weather_logs INSERT — raw 응답 포함해 통째로 보존
     const weather_log_id = await insertWeatherLog(snap)
 
-    // 4) 응답: 어떤 행이 들어갔는지 + 핵심 값 요약 (디버깅·모니터링용)
+    // 4) 트리거 판정 + trigger_logs INSERT
+    // 같은 시점에 여러 트리거가 동시 발동 가능 (예: 비+미세먼지)
+    // UNIQUE(trigger_type, triggered_date)로 하루 1회만 신규 INSERT
+    const firedTypes = evaluateTriggers(snap)
+    const triggered_date = toKstDateString(snap.measured_at)
+    const triggers = await Promise.all(
+      firedTypes.map(async (trigger_type) => {
+        const r = await insertTriggerLog({
+          weather_log_id,
+          trigger_type,
+          triggered_at: snap.measured_at,
+          triggered_date,
+        })
+        return { trigger_type, inserted: r.inserted, trigger_log_id: r.id }
+      }),
+    )
+
+    // 5) 응답: 어떤 행이 들어갔는지 + 핵심 값 요약 (디버깅·모니터링용)
     return ok({
       weather_log_id,
       measured_at: snap.measured_at,
@@ -33,6 +52,7 @@ export async function POST(request: NextRequest) {
       snow: snap.snow,
       pm25: snap.pm25,
       pm10: snap.pm10,
+      triggers,
     })
   } catch (error) {
     // 외부 API 장애·DB 연결 실패 시 5xx 반환
