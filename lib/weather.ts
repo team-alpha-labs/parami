@@ -44,7 +44,7 @@ export async function fetchWeatherSnapshot(): Promise<WeatherSnapshot> {
   })}`
 
   const airUrl = `${AIR_BASE}?${new URLSearchParams({
-    serviceKey: airKey,
+    serviceKey: normalizeServiceKey(airKey),
     returnType: 'json',
     numOfRows: '100',
     pageNo: '1',
@@ -68,6 +68,16 @@ export async function fetchWeatherSnapshot(): Promise<WeatherSnapshot> {
     pm10: air.pm10,
     raw_kma: rawKma,
     raw_air: rawAir,
+  }
+}
+
+// data.go.kr에서 복사한 "인코딩된 인증키"가 들어오면 URLSearchParams가
+// 다시 인코딩해 인증 실패가 나므로, 먼저 원래 키 형태로 되돌린다.
+function normalizeServiceKey(key: string): string {
+  try {
+    return key.includes('%') ? decodeURIComponent(key) : key
+  } catch {
+    return key
   }
 }
 

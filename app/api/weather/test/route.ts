@@ -36,7 +36,7 @@ export async function GET() {
   const airUrl =
     'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?' +
     new URLSearchParams({
-      serviceKey: airKey,
+      serviceKey: normalizeServiceKey(airKey),
       returnType: 'json',
       numOfRows: '10',
       pageNo: '1',
@@ -67,5 +67,13 @@ function safeParse(s: string) {
     return JSON.parse(s)
   } catch {
     return s
+  }
+}
+
+function normalizeServiceKey(key: string): string {
+  try {
+    return key.includes('%') ? decodeURIComponent(key) : key
+  } catch {
+    return key
   }
 }
