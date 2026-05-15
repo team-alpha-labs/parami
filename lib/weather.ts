@@ -105,14 +105,17 @@ async function fetchJson(url: string): Promise<unknown> {
 
 // 공공 API는 HTTP 200으로 와도 응답 header.resultCode가 '00'이 아니면 실패
 // 키 만료/할당량 초과 등을 잡아서 null INSERT 방지
+// permissive: header가 없는 응답 포맷(apihub.kma 등)은 통과 — items-empty 체크가 fallback
 function assertOkResponse(raw: unknown, source: string): void {
   const r = raw as {
     response?: { header?: { resultCode?: string; resultMsg?: string } }
   }
-  const code = r?.response?.header?.resultCode
-  if (code !== '00') {
-    const msg = r?.response?.header?.resultMsg ?? 'unknown'
-    throw new Error(`${source} resultCode=${code ?? 'missing'} (${msg})`)
+  const header = r?.response?.header
+  if (!header) return
+  const code = header.resultCode
+  if (code !== undefined && code !== '00') {
+    const msg = header.resultMsg ?? 'unknown'
+    throw new Error(`${source} resultCode=${code} (${msg})`)
   }
 }
 
