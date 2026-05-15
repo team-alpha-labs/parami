@@ -1,0 +1,102 @@
+import { NextRequest } from 'next/server'
+import { requireUser } from '@/lib/auth'
+import { ok, err } from '@/lib/api'
+import { findPlanByTier } from '@/lib/plans'
+import { processConfirmedPayment } from '@/lib/queries/payments'
+
+// 허용 티어 (DB ENUM과 일치)
+const VALID_TIERS = ['basic', 'standard', 'premium'] as const
+type Tier = (typeof VALID_TIERS)[number]
+
+// 토스 결제 확정 API 엔드포인트 (운영/테스트 동일)
+const TOSS_CONFIRM_URL = 'https://api.tosspayments.com/v1/payments/confirm'
+
+// POST /api/payments/confirm
+// 프론트가 토스 결제창에서 받은 (paymentKey, orderId, amount, tier)을 전달
+// 백엔드가 토스 API로 결제 진위 검증 후 payments + subscriptions DB 처리 (트랜잭션)
+export async function POST(request: NextRequest) {
+  try {
+    // 1) 인증 확인
+    const session = requireUser(request)
+    if (!session) return err('로그인이 필요합니다', 401)
+
+    // 2) body 파싱 + 필수 필드 검증
+    const body = (await request.json().catch(() => null)) as {
+      paymentKey?: string
+      orderId?: string
+      amount?: number
+      tier?: string
+    } | null
+
+    if (!body?.paymentKey || !body.orderId || !body.amount || !body.tier) {
+      return err('paymentKey, orderId, amount, tier는 필수입니다', 400)
+    }
+
+    // 3) tier 값 유효성 (DB ENUM 위반 방지)
+    if (!VALID_TIERS.includes(body.tier as Tier)) {
+      return err('tier는 basic/standard/premium 중 하나여야 합니다', 400)
+    }
+    const tier = body.tier as Tier
+
+    // 4) amount 변조 검증
+    // 클라이언트가 "premium"이라고 주장하면서 amount는 7,400원으로 보내는 공격 차단
+    // 서버 측 가격(DB plans 테이블)이 권위
+    const plan = await findPlanByTier(tier)
+    if (!plan) return err('유효하지 않은 티어입니다', 400)
+    if (plan.price !== body.amount) {
+      return err('결제 금액이 티어 가격과 일치하지 않습니다', 400)
+    }
+
+    // 5) TOSS_SECRET_KEY 환경변수 확인
+    const tossSecret = process.env.TOSS_SECRET_KEY
+    if (!tossSecret) {
+      console.error('TOSS_SECRET_KEY 환경변수 누락')
+      return err('결제 서버 설정 오류', 500)
+    }
+
+    // 6) 토스 API 호출 — Basic Auth 헤더는 base64(SECRET:)
+    // 토스 인증 방식: 시크릿키 뒤에 ":" 붙이고 base64 인코딩 (RFC 7617)
+    const authHeader = 'Basic ' + Buffer.from(tossSecret + ':').toString('base64')
+
+    const tossRes = await fetch(TOSS_CONFIRM_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        paymentKey: body.paymentKey,
+        orderId: body.orderId,
+        amount: body.amount,
+      }),
+    })
+
+    // 7) 토스 응답 처리
+    // 200 외의 응답은 결제 거부/오류 — 클라이언트엔 generic 메시지
+    if (!tossRes.ok) {
+      const tossError = await tossRes.json().catch(() => ({}))
+      console.error('Toss API confirm 실패:', tossRes.status, tossError)
+      return err('결제 검증 실패', 400)
+    }
+
+    // 토스가 검증 OK → 결제 정말 발생한 것
+    // 응답 body는 결제 상세 정보 (paymentKey, orderId, totalAmount, status 등)
+
+    // 8) DB 트랜잭션 처리 (payments INSERT + subscriptions INSERT/UPDATE)
+    // toss_order_id UNIQUE 제약으로 동일 orderId 두 번 확정 차단
+    const result = await processConfirmedPayment(
+      session.uid,
+      tier,
+      body.amount,
+      body.orderId,
+      body.paymentKey
+    )
+
+    return ok(result)
+  } catch (error) {
+    // DB 트랜잭션 실패, 토스 API 네트워크 오류 등
+    // 서버 로그엔 상세, 클라이언트엔 generic (내부 정보 노출 방지)
+    console.error('POST /api/payments/confirm error:', error)
+    return err('결제 처리 실패', 500)
+  }
+}
