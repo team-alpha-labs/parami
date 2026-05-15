@@ -72,3 +72,56 @@ export async function listAllPayments(): Promise<AdminPaymentRow[]> {
   )
   return rows as AdminPaymentRow[]
 }
+
+export type AdminTriggerRow = {
+  id: number
+  weather_log_id: number
+  trigger_type: 'rain' | 'heat' | 'cold' | 'snow' | 'dust' | 'good_weather'
+  triggered_at: Date
+  triggered_date: string
+  // 발동 근거가 된 날씨 측정값 — 운영자가 한 화면에서 "왜 이 트리거가 떴는지" 파악
+  rain_mm: number | null
+  temp_c: number | null
+  wind_ms: number | null
+  pm25: number | null
+}
+
+// 트리거 발동 내역 — 최신순, 발동 근거(날씨 스냅샷) 함께 JOIN
+export async function listAllTriggers(): Promise<AdminTriggerRow[]> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT t.id, t.weather_log_id, t.trigger_type, t.triggered_at, t.triggered_date,
+            w.rain_mm, w.temp_c, w.wind_ms, w.pm25
+     FROM trigger_logs t
+     JOIN weather_logs w ON w.id = t.weather_log_id
+     ORDER BY t.triggered_at DESC, t.id DESC`,
+  )
+  return rows as AdminTriggerRow[]
+}
+
+export type AdminRewardRow = {
+  id: number
+  user_id: number
+  user_email: string
+  user_name: string
+  trigger_log_id: number
+  trigger_type: 'rain' | 'heat' | 'cold' | 'snow' | 'dust' | 'good_weather'
+  amount: number
+  tier_at_reward: 'basic' | 'standard' | 'premium'
+  reward_year: number
+  reward_month: number
+  rewarded_at: Date
+}
+
+// 보상 지급 내역 — 최신순, 유저/트리거 컨텍스트 함께 JOIN
+export async function listAllRewards(): Promise<AdminRewardRow[]> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT r.id, r.user_id, u.email AS user_email, u.name AS user_name,
+            r.trigger_log_id, t.trigger_type,
+            r.amount, r.tier_at_reward, r.reward_year, r.reward_month, r.rewarded_at
+     FROM reward_logs r
+     JOIN users u ON u.id = r.user_id
+     JOIN trigger_logs t ON t.id = r.trigger_log_id
+     ORDER BY r.rewarded_at DESC, r.id DESC`,
+  )
+  return rows as AdminRewardRow[]
+}
