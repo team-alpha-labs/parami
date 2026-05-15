@@ -31,14 +31,26 @@ export async function fetchWeatherSnapshot(): Promise<WeatherSnapshot> {
   // 기상청 API는 KST 기준이라 서버 로컬 타임존이 UTC(GCP 기본값)여도 동작해야 함
   const { measured_at, base_date, base_time } = kstPreviousHour(new Date())
 
-  const kmaUrl =
-    `${KMA_BASE}?authKey=${kmaKey}&numOfRows=10&pageNo=1` +
-    `&base_date=${base_date}&base_time=${base_time}` +
-    `&nx=${SEOUL.nx}&ny=${SEOUL.ny}&dataType=JSON`
+  // 공공 API 키에 +, /, = 가 포함될 수 있어 URLSearchParams로 안전하게 인코딩
+  const kmaUrl = `${KMA_BASE}?${new URLSearchParams({
+    authKey: kmaKey,
+    numOfRows: '10',
+    pageNo: '1',
+    base_date,
+    base_time,
+    nx: String(SEOUL.nx),
+    ny: String(SEOUL.ny),
+    dataType: 'JSON',
+  })}`
 
-  const airUrl =
-    `${AIR_BASE}?serviceKey=${airKey}&returnType=json` +
-    `&numOfRows=100&pageNo=1&sidoName=${encodeURIComponent(SEOUL.sido)}&ver=1.0`
+  const airUrl = `${AIR_BASE}?${new URLSearchParams({
+    serviceKey: normalizeServiceKey(airKey),
+    returnType: 'json',
+    numOfRows: '100',
+    pageNo: '1',
+    sidoName: SEOUL.sido,
+    ver: '1.0',
+  })}`
 
   const [rawKma, rawAir] = await Promise.all([fetchJson(kmaUrl), fetchJson(airUrl)])
   const kma = parseKma(rawKma)
@@ -59,14 +71,61 @@ export async function fetchWeatherSnapshot(): Promise<WeatherSnapshot> {
   }
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url)
-  const text = await res.text()
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+// data.go.kr에서 복사한 "인코딩된 인증키"가 들어오면 URLSearchParams가
+// 다시 인코딩해 인증 실패가 나므로, 먼저 원래 키 형태로 되돌린다.
+function normalizeServiceKey(key: string): string {
   try {
-    return JSON.parse(text)
+    return key.includes('%') ? decodeURIComponent(key) : key
   } catch {
-    throw new Error(`Invalid JSON response: ${text.slice(0, 200)}`)
+    return key
+  }
+}
+
+const FETCH_TIMEOUT_MS = 5000
+const FETCH_RETRIES = 1
+const FETCH_RETRY_DELAY_MS = 500
+
+// 외부 API 호출에 timeout + 1회 재시도 부여
+// Cloud Scheduler는 5xx 시 자동 재호출하지만, 단일 호출이 무한 hang하는 케이스는 여기서 차단
+async function fetchJson(url: string): Promise<unknown> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= FETCH_RETRIES; attempt++) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    try {
+      const res = await fetch(url, { signal: controller.signal })
+      const text = await res.text()
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+      try {
+        return JSON.parse(text)
+      } catch {
+        throw new Error(`Invalid JSON response: ${text.slice(0, 200)}`)
+      }
+    } catch (e) {
+      lastError = e
+      if (attempt < FETCH_RETRIES) {
+        await new Promise((r) => setTimeout(r, FETCH_RETRY_DELAY_MS))
+      }
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  throw lastError
+}
+
+// 공공 API는 HTTP 200으로 와도 응답 header.resultCode가 '00'이 아니면 실패
+// 키 만료/할당량 초과 등을 잡아서 null INSERT 방지
+// permissive: header가 없는 응답 포맷(apihub.kma 등)은 통과 — items-empty 체크가 fallback
+function assertOkResponse(raw: unknown, source: string): void {
+  const r = raw as {
+    response?: { header?: { resultCode?: string; resultMsg?: string } }
+  }
+  const header = r?.response?.header
+  if (!header) return
+  const code = header.resultCode
+  if (code !== undefined && code !== '00') {
+    const msg = header.resultMsg ?? 'unknown'
+    throw new Error(`${source} resultCode=${code} (${msg})`)
   }
 }
 
@@ -102,6 +161,7 @@ function parseKma(raw: unknown): {
   wind_ms: number | null
   pty: number | null
 } {
+  assertOkResponse(raw, 'KMA')
   const items = extractKmaItems(raw)
   const byCategory = new Map<string, number>()
   for (const it of items) {
@@ -119,14 +179,17 @@ function parseKma(raw: unknown): {
 function extractKmaItems(raw: unknown): KmaItem[] {
   const r = raw as { response?: { body?: { items?: { item?: KmaItem[] } } } }
   const arr = r?.response?.body?.items?.item
-  return Array.isArray(arr) ? arr : []
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error('KMA response has no items')
+  }
+  return arr
 }
 
 type AirItem = { pm25Value?: string; pm10Value?: string; dataTime?: string }
 
 function parseAir(raw: unknown): { pm25: number | null; pm10: number | null } {
+  assertOkResponse(raw, 'AirKorea')
   const items = extractAirItems(raw)
-  if (items.length === 0) return { pm25: null, pm10: null }
 
   // 측정소별로 dataTime이 다를 수 있어 가장 최신 시각의 측정값만 평균
   const latest = items
@@ -145,7 +208,10 @@ function parseAir(raw: unknown): { pm25: number | null; pm10: number | null } {
 function extractAirItems(raw: unknown): AirItem[] {
   const r = raw as { response?: { body?: { items?: AirItem[] } } }
   const arr = r?.response?.body?.items
-  return Array.isArray(arr) ? arr : []
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error('AirKorea response has no items')
+  }
+  return arr
 }
 
 function averageNumeric(values: Array<string | undefined>): number | null {
