@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth'
 import { ok, err } from '@/lib/api'
 import { findPlanByTier } from '@/lib/plans'
 import { processConfirmedPayment } from '@/lib/queries/payments'
+import { cancelTossPayment } from '@/lib/toss'
 
 // 허용 티어 (DB ENUM과 일치)
 const VALID_TIERS = ['basic', 'standard', 'premium'] as const
@@ -84,18 +85,45 @@ export async function POST(request: NextRequest) {
 
     // 8) DB 트랜잭션 처리 (payments INSERT + subscriptions INSERT/UPDATE)
     // toss_order_id UNIQUE 제약으로 동일 orderId 두 번 확정 차단
-    const result = await processConfirmedPayment(
-      session.uid,
-      tier,
-      body.amount,
-      body.orderId,
-      body.paymentKey
-    )
+    //
+    // ⚠️ 여기서 실패하면 사용자 돈은 토스에 잡혀있지만 우리 DB엔 없음 → 자동 환불 처리
+    // 별도 try/catch로 감싸서 "토스 성공 후 DB 실패" 케이스만 환불 분기로
+    try {
+      const result = await processConfirmedPayment(
+        session.uid,
+        tier,
+        body.amount,
+        body.orderId,
+        body.paymentKey
+      )
+      return ok(result)
+    } catch (dbError) {
+      // DB 처리 실패 → 사용자 돈 보호 위해 토스에 환불 요청
+      console.error(
+        'CRITICAL: payment DB failure after Toss confirm — auto-refund 시도',
+        { orderId: body.orderId, paymentKey: body.paymentKey, dbError }
+      )
 
-    return ok(result)
+      try {
+        await cancelTossPayment(body.paymentKey, '서버 DB 처리 실패로 인한 자동 환불')
+        console.log(`[refund] orderId=${body.orderId} 환불 처리 완료`)
+        return err('결제 처리 중 오류가 발생해 자동 환불되었습니다', 500)
+      } catch (refundError) {
+        // 환불 자체도 실패 → 사용자 돈 묶임. 운영자 수동 처리 필수
+        // 로그에 명확히 남겨야 운영팀이 추적 가능
+        console.error(
+          'CRITICAL: 환불 자체 실패 — 운영자 수동 처리 필요',
+          { orderId: body.orderId, paymentKey: body.paymentKey, refundError }
+        )
+        return err(
+          '결제 처리 실패. 환불도 자동 처리되지 않아 고객센터 문의 바랍니다',
+          500
+        )
+      }
+    }
   } catch (error) {
-    // DB 트랜잭션 실패, 토스 API 네트워크 오류 등
-    // 서버 로그엔 상세, 클라이언트엔 generic (내부 정보 노출 방지)
+    // body 파싱 / 토스 API 네트워크 오류 등 — 토스 confirm 호출 전 또는 호출 중 에러
+    // 이 단계에선 결제가 우리 시스템에 확정되지 않았으므로 환불 불필요
     console.error('POST /api/payments/confirm error:', error)
     return err('결제 처리 실패', 500)
   }
