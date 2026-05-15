@@ -34,7 +34,19 @@ npm install
    USE parami;
    ```
 5. `db/schema.sql` 내용 전체 복사 → 쿼리창에 붙여넣기 → ⚡ 실행
-6. 좌측 SCHEMAS 새로고침 → `parami` 펼치면 7개 테이블 보임
+6. 좌측 SCHEMAS 새로고침 → `parami` 펼치면 8개 테이블 보임
+
+> **이미 DB가 만들어진 상태로 최신 main을 받았다면 — 마이그레이션 적용 필요**
+> `db/schema.sql`은 신규 셋업용. 기존 DB는 추가 변경을 `db/migrations/` 폴더의 SQL 파일들로 순서대로 적용.
+>
+> ```sql
+> -- MySQL Workbench 또는 mysql CLI에서 순서대로 실행
+> -- (이미 적용한 마이그레이션은 ALTER 에러 나므로 스킵)
+> SOURCE db/migrations/001_subscriptions_add_pending_tier.sql;
+> SOURCE db/migrations/002_subscriptions_status_add_expired.sql;
+> ```
+>
+> 새 마이그레이션 파일이 추가되면 번호 순서대로 적용. 적용 이력은 팀 채팅/PR 본문에서 확인.
 
 ---
 

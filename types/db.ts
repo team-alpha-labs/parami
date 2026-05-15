@@ -20,10 +20,11 @@ export type SubscriptionRow = {
   id: number
   user_id: number
   tier: 'basic' | 'standard' | 'premium'
-  status: 'active' | 'cancelled'
+  status: 'active' | 'cancelled' | 'expired'
   next_billing_at: Date | null
   started_at: Date
   cancelled_at: Date | null
+  pending_tier: 'basic' | 'standard' | 'premium' | null
 }
 
 export type PaymentRow = {
