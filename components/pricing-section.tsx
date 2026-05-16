@@ -1,13 +1,7 @@
 'use client'
 
 // PricingSection — 요금제 3티어 카드 (공통 컴포넌트)
-// 사용처: /pricing 페이지 + 여진의 랜딩(/) 페이지에서도 import
-//
-// 데이터 소스:
-//   - 가격/티어 키: GET /api/plans (DB plans 테이블)
-//   - features 체크리스트: 프론트 하드코딩 (TIER_FEATURES) — DB에 컬럼 없음
-//     (향후 plans 테이블에 JSON features 컬럼 추가 시 백엔드 응답으로 대체)
-//   - 표시명: tier 코드를 영문 라벨로 매핑 (디자인이 Basic/Standard/Premium 영문이라 DB name 무시)
+// 사용처: /pricing 페이지 + 여진의 랜딩(/) 페이지
 //
 // 로그인 상태에 따른 버튼 분기:
 //   - 비로그인           → "선택하기" → /signup
@@ -26,37 +20,18 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 type Tier = 'basic' | 'standard' | 'premium'
-
-type Plan = {
-  id: number
-  tier: Tier
-  name: string
-  price: number
-  description: string | null
-}
-
-type Subscription = {
-  id: number
-  user_id: number
-  tier: Tier
-  status: 'active' | 'cancelled' | 'expired'
-  next_billing_at: string | null
-  started_at: string
-  cancelled_at: string | null
-  pending_tier: Tier | null
-}
+type Plan = { tier: Tier; price: number }
 
 const HIGHLIGHTED_TIER: Tier = 'standard'
 
-// 디자인 라벨 (DB plans.name은 한글이지만 디자인은 영문이라 분리)
+// 디자인 라벨 (DB plans.name은 한글이지만 디자인은 영문이라 별도 매핑)
 const TIER_LABEL: Record<Tier, string> = {
   basic: 'Basic',
   standard: 'Standard',
   premium: 'Premium',
 }
 
-// 티어별 features 체크리스트 — 디자인 그대로 (룰렛 관련 문구는 향후 도입 시 추가)
-// 향후 DB plans 테이블에 JSON features 컬럼 추가되면 이 상수 제거하고 plan.features 사용
+// 디자인의 체크리스트 — DB에 features 컬럼 없어 하드코딩
 const TIER_FEATURES: Record<Tier, string[]> = {
   basic: ['회당 800원 보상', '월 최대 10회 수령'],
   standard: ['회당 1,400원 보상', '월 최대 10회 수령', 'Standard 전용 이벤트'],
@@ -67,7 +42,6 @@ export function PricingSection() {
   const queryClient = useQueryClient()
   const { data: me, isLoading: meLoading } = useMe()
 
-  // plans는 비로그인도 표시해야 하므로 항상 fetch (랜딩에서도 사용)
   const {
     data: plans,
     isLoading: plansLoading,
@@ -77,16 +51,13 @@ export function PricingSection() {
     queryFn: () => api.get<Plan[]>('/api/plans'),
   })
 
-  // 현재 티어 강조를 위해 본인 구독 조회 — 로그인 시에만 (enabled로 비로그인 호출 차단)
-  const { data: mySubscription } = useQuery<Subscription | null>({
+  // 본인 현재 티어 강조용 — 로그인 시에만
+  const { data: mySubscription } = useQuery<{ tier: Tier } | null>({
     queryKey: ['subscriptions', 'me'],
-    queryFn: () => api.get<Subscription | null>('/api/subscriptions/me'),
+    queryFn: () => api.get<{ tier: Tier } | null>('/api/subscriptions/me'),
     enabled: !!me,
   })
 
-  // 티어 변경 성공 시 ['subscriptions','me'] 캐시 무효화 → "현재 이용 중" 표시 갱신
-  // 단, change-tier는 즉시 tier가 아닌 pending_tier만 바꾸므로 카드 강조 즉시 변경 X
-  // (다음 결제 시점에 tier가 반영되며 그때 캐시가 자연스럽게 새 상태 받아옴)
   const changeTier = useMutation({
     mutationFn: (newTier: Tier) =>
       api.patch('/api/subscriptions/change-tier', { newTier }),
@@ -95,7 +66,6 @@ export function PricingSection() {
       queryClient.invalidateQueries({ queryKey: ['subscriptions', 'me'] })
     },
     onError: (e) => {
-      // 400 (같은 티어), 404 (active 없음) 등 백엔드 메시지를 그대로 노출
       const msg = e instanceof ApiError ? e.message : '티어 변경에 실패했어요.'
       toast.error(msg)
     },
@@ -130,8 +100,7 @@ export function PricingSection() {
         {plans.map((plan) => {
           const isHighlighted = plan.tier === HIGHLIGHTED_TIER
           const isCurrent = mySubscription?.tier === plan.tier
-          // 동시에 여러 티어 버튼을 눌렀을 때 클릭한 카드만 "변경 중..." 표시되도록
-          // variables(가장 최근 mutate에 넘긴 값)와 이 카드의 tier가 같을 때만 true
+          // 클릭한 카드에만 "변경 중..." 표시 (다른 카드는 disabled만)
           const isPending =
             changeTier.isPending && changeTier.variables === plan.tier
           const features = TIER_FEATURES[plan.tier]

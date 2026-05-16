@@ -1,6 +1,5 @@
 // /pricing — 요금제 페이지 (PricingSection + 하단 CTA)
-// proxy.ts에서 PUBLIC_PATHS로 지정되어 있어 비로그인도 접근 가능
-// 하단 CTA는 페이지 전용 (PricingSection 안에 두지 않음 — 여진 랜딩에선 별도 위치 사용)
+// 하단 CTA는 페이지 전용 — 여진 랜딩에선 별도 위치라 PricingSection 안에 두지 않음
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
