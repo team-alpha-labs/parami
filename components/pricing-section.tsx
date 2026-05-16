@@ -3,13 +3,20 @@
 // PricingSection — 요금제 3티어 카드 (공통 컴포넌트)
 // 사용처: /pricing 페이지 + 여진의 랜딩(/) 페이지에서도 import
 //
+// 데이터 소스:
+//   - 가격/티어 키: GET /api/plans (DB plans 테이블)
+//   - features 체크리스트: 프론트 하드코딩 (TIER_FEATURES) — DB에 컬럼 없음
+//     (향후 plans 테이블에 JSON features 컬럼 추가 시 백엔드 응답으로 대체)
+//   - 표시명: tier 코드를 영문 라벨로 매핑 (디자인이 Basic/Standard/Premium 영문이라 DB name 무시)
+//
 // 로그인 상태에 따른 버튼 분기:
-//   - 비로그인           → "가입하기" → /signup
+//   - 비로그인           → "선택하기" → /signup
 //   - 로그인 + 현재 티어 → "현재 이용 중" (disabled)
-//   - 로그인 + 다른 티어 → "이 티어로 변경" → PATCH /api/subscriptions/change-tier
+//   - 로그인 + 다른 티어 → "선택하기" → PATCH /api/subscriptions/change-tier
 //     (즉시 변경 X — pending_tier에 예약되고 다음 결제 시점에 적용)
 
 import Link from 'next/link'
+import { Check } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api, ApiError } from '@/lib/client'
@@ -40,6 +47,31 @@ type Subscription = {
 }
 
 const HIGHLIGHTED_TIER: Tier = 'standard'
+
+// 디자인 라벨 (DB plans.name은 한글이지만 디자인은 영문이라 분리)
+const TIER_LABEL: Record<Tier, string> = {
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
+}
+
+// 티어별 features 체크리스트 — 디자인 그대로
+// 향후 DB plans 테이블에 JSON features 컬럼 추가되면 이 상수 제거하고 plan.features 사용
+const TIER_FEATURES: Record<Tier, string[]> = {
+  basic: ['회당 800원 보상', '월 최대 10회 수령', '매 수령 시 기본 룰렛 보상'],
+  standard: [
+    '회당 1,400원 보상',
+    '월 최대 10회 수령',
+    '매 수령 시 기본 룰렛 보상',
+    'Standard 전용 이벤트',
+  ],
+  premium: [
+    '회당 2,300원 보상',
+    '월 최대 10회 수령',
+    '매 수령시 고급 룰렛 보상',
+    'Premium 전용 이벤트',
+  ],
+}
 
 export function PricingSection() {
   const queryClient = useQueryClient()
@@ -97,11 +129,11 @@ export function PricingSection() {
 
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-12">
-      <h2 className="text-center text-2xl font-bold text-foreground md:text-3xl">
+      <h2 className="text-center text-3xl font-bold text-foreground md:text-4xl">
         요금제 선택
       </h2>
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        매월 결제하고 악천후마다 자동으로 보상금을 받아보세요
+      <p className="mt-3 text-center text-sm text-muted-foreground">
+        내게 맞는 보험 플랜을 선택하세요
       </p>
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6 md:items-stretch">
@@ -112,23 +144,25 @@ export function PricingSection() {
           // variables(가장 최근 mutate에 넘긴 값)와 이 카드의 tier가 같을 때만 true
           const isPending =
             changeTier.isPending && changeTier.variables === plan.tier
+          const features = TIER_FEATURES[plan.tier]
 
           return (
             <Card
               key={plan.tier}
               className={cn(
-                'flex flex-col',
+                'relative flex flex-col',
                 isHighlighted && 'border-primary border-2 shadow-md',
               )}
             >
-              <CardHeader className="text-center">
-                {isHighlighted && (
-                  <span className="mx-auto mb-2 inline-block rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
-                    가장 인기
-                  </span>
-                )}
-                <p className="text-sm font-medium text-muted-foreground">
-                  {plan.name}
+              {isHighlighted && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-medium text-primary-foreground">
+                  인기
+                </span>
+              )}
+
+              <CardHeader>
+                <p className="text-2xl font-bold text-foreground">
+                  {TIER_LABEL[plan.tier]}
                 </p>
                 <p className="mt-1 text-3xl font-bold text-foreground">
                   {plan.price.toLocaleString()}
@@ -139,11 +173,14 @@ export function PricingSection() {
               </CardHeader>
 
               <CardContent className="flex flex-1 flex-col justify-between gap-6">
-                {plan.description && (
-                  <p className="text-center text-sm text-muted-foreground">
-                    {plan.description}
-                  </p>
-                )}
+                <ul className="space-y-2 text-sm text-foreground">
+                  {features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
 
                 {!me ? (
                   <Button
@@ -151,7 +188,7 @@ export function PricingSection() {
                     variant={isHighlighted ? 'default' : 'outline'}
                     className="w-full"
                   >
-                    <Link href="/signup">가입하기</Link>
+                    <Link href="/signup">선택하기</Link>
                   </Button>
                 ) : isCurrent ? (
                   <Button disabled variant="secondary" className="w-full">
@@ -164,7 +201,7 @@ export function PricingSection() {
                     variant={isHighlighted ? 'default' : 'outline'}
                     className="w-full"
                   >
-                    {isPending ? '변경 중...' : '이 티어로 변경'}
+                    {isPending ? '변경 중...' : '선택하기'}
                   </Button>
                 )}
               </CardContent>
