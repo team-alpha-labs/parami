@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 }
 
 const NEXT_STEPS = [
-  '결제가 활성화됐어요',
+  '구독이 활성화됐어요',
   '날씨 모니터링이 시작됐어요',
-  '트리거 조건 충족 시 자동 보상 지급돼요',
+  '조건이 맞으면 자동으로 보상이 지급돼요',
 ] as const
 
 export default function PaymentCompletePage() {
@@ -25,9 +25,9 @@ export default function PaymentCompletePage() {
       <h1 className="mt-6 text-3xl font-bold text-foreground">결제 완료!</h1>
 
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground md:text-base">
-        Parami 결제가 정상적으로 완료됐어요.
+        결제가 완료됐어요!
         <br />
-        이제 날씨 조건이 충족되면 자동으로 보상금을 받을 수 있어요.
+        이제 악천후가 오면 자동으로 보상금을 받을 수 있어요.
       </p>
 
       <div className="mt-8 rounded-lg bg-primary/5 p-6 text-left">
