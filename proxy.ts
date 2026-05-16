@@ -9,7 +9,18 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = new Set(['/', '/login', '/signup', '/pricing'])
+// 공개 라우트 — 비로그인도 접근 가능
+// 운영 약관·정책 페이지는 법적으로 누구나 볼 수 있어야 함 (페이지 자체는 추후 제작)
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/login',
+  '/signup',
+  '/pricing',
+  '/terms',
+  '/privacy',
+  '/refund-policy',
+  '/support',
+])
 const ADMIN_PREFIX = '/admin'
 
 export function proxy(req: NextRequest) {

@@ -47,30 +47,44 @@ App Router 컨벤션. 라우트 그룹 `(auth)/(consumer)/(admin)`은 URL에 영
 
 ## 2. 자주 쓰는 패턴 5개
 
-### ① 서버 컴포넌트에서 API 호출 (가장 단순)
+### ① 서버 컴포넌트에서 데이터 조회 (정석)
+
+**서버 컴포넌트에선 `/api/...`를 fetch로 호출하지 말 것.** 같은 Next.js 안에서 도는 코드라 `lib/queries/*` 함수를 직접 import해서 DB에 그대로 접근하는 게 정답. (API 라우트는 브라우저 클라이언트용. 서버 → 서버 HTTP 호출은 절대 URL 생성·쿠키 전달 같은 함정만 늘어남)
 
 ```tsx
 // app/(consumer)/mypage/page.tsx
-import { headers } from 'next/headers'
-
-async function fetchMyPage() {
-  // 서버에서 자신의 API 호출 — 같은 도메인이라 직접 fetch
-  const h = await headers()
-  const cookie = h.get('cookie') ?? ''
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/auth/me`, {
-    headers: { cookie },
-    cache: 'no-store',
-  })
-  return res.json()
-}
+import { redirect } from 'next/navigation'
+import { getServerSession } from '@/lib/auth-server'
+import { getActiveSubscriptionByUserId } from '@/lib/queries/subscriptions'
+import { getRewardSummaryByUserId } from '@/lib/queries/rewards'
 
 export default async function MyPage() {
-  const data = await fetchMyPage()
-  return <div>{data.data.name}</div>
+  // 1) 세션 확인 (proxy.ts에서도 가드되지만 페이지에서도 안전장치)
+  const session = await getServerSession()
+  if (!session) redirect('/login')
+
+  // 2) lib/queries 함수 직접 호출 — DB에 in-process 접근 (HTTP X)
+  const [subscription, summary] = await Promise.all([
+    getActiveSubscriptionByUserId(session.uid),
+    getRewardSummaryByUserId(session.uid),
+  ])
+
+  return (
+    <div>
+      <p>티어: {subscription?.tier ?? '구독 없음'}</p>
+      <p>이번 달 보상: {summary.thisMonthCount}회</p>
+    </div>
+  )
 }
 ```
 
-⚠️ 서버 컴포넌트에서는 `lib/client.ts`의 `api.get()`이 안 됨 (브라우저 fetch 기반). 서버에선 위 패턴 사용.
+**왜 이게 맞나:**
+- 서버 런타임의 `fetch('/api/...')`는 상대 URL이라 동작 안 함 (절대 URL 필요)
+- `lib/queries/*`는 백엔드 분들이 만든 DB 접근 헬퍼 — 이미 검증·트랜잭션 처리됨
+- JSON 직렬화·역직렬화 한 단계 생략 + DB 풀 그대로 재사용
+- 타입도 그대로 따라옴 (`SubscriptionRow`, `RewardSummary` 등)
+
+**`lib/client.ts`의 `api.get()`은 클라이언트 컴포넌트(`'use client'`)에서만 사용.** 서버 컴포넌트에서 import하면 동작은 해도 위 이유로 손해.
 
 ### ② 클라이언트 컴포넌트에서 API 호출 (TanStack Query)
 
