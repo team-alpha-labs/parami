@@ -1,3 +1,6 @@
+// /pricing — 요금제 페이지 (PricingSection 공통 컴포넌트를 감싼 얇은 라우트)
+// proxy.ts에서 PUBLIC_PATHS로 지정되어 있어 비로그인도 접근 가능
+
 import type { Metadata } from 'next'
 import { PricingSection } from '@/components/pricing-section'
 

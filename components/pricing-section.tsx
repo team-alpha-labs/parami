@@ -1,13 +1,13 @@
 'use client'
 
-// 요금제 3티어 카드 섹션 (공통 컴포넌트)
-// 사용처: /pricing 페이지 + 여진의 랜딩(/) 페이지
+// PricingSection — 요금제 3티어 카드 (공통 컴포넌트)
+// 사용처: /pricing 페이지 + 여진의 랜딩(/) 페이지에서도 import
 //
 // 로그인 상태에 따른 버튼 분기:
-// - 비로그인           → "가입하기" → /signup
-// - 로그인 + 현재 티어 → "현재 이용 중" (disabled)
-// - 로그인 + 다른 티어 → "이 티어로 변경" → PATCH /api/subscriptions/change-tier
-//   (즉시 변경 X, pending_tier에 예약 → 다음 결제 시점에 반영)
+//   - 비로그인           → "가입하기" → /signup
+//   - 로그인 + 현재 티어 → "현재 이용 중" (disabled)
+//   - 로그인 + 다른 티어 → "이 티어로 변경" → PATCH /api/subscriptions/change-tier
+//     (즉시 변경 X — pending_tier에 예약되고 다음 결제 시점에 적용)
 
 import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -45,6 +45,7 @@ export function PricingSection() {
   const queryClient = useQueryClient()
   const { data: me, isLoading: meLoading } = useMe()
 
+  // plans는 비로그인도 표시해야 하므로 항상 fetch (랜딩에서도 사용)
   const {
     data: plans,
     isLoading: plansLoading,
@@ -54,12 +55,16 @@ export function PricingSection() {
     queryFn: () => api.get<Plan[]>('/api/plans'),
   })
 
+  // 현재 티어 강조를 위해 본인 구독 조회 — 로그인 시에만 (enabled로 비로그인 호출 차단)
   const { data: mySubscription } = useQuery<Subscription | null>({
     queryKey: ['subscriptions', 'me'],
     queryFn: () => api.get<Subscription | null>('/api/subscriptions/me'),
     enabled: !!me,
   })
 
+  // 티어 변경 성공 시 ['subscriptions','me'] 캐시 무효화 → "현재 이용 중" 표시 갱신
+  // 단, change-tier는 즉시 tier가 아닌 pending_tier만 바꾸므로 카드 강조 즉시 변경 X
+  // (다음 결제 시점에 tier가 반영되며 그때 캐시가 자연스럽게 새 상태 받아옴)
   const changeTier = useMutation({
     mutationFn: (newTier: Tier) =>
       api.patch('/api/subscriptions/change-tier', { newTier }),
@@ -68,6 +73,7 @@ export function PricingSection() {
       queryClient.invalidateQueries({ queryKey: ['subscriptions', 'me'] })
     },
     onError: (e) => {
+      // 400 (같은 티어), 404 (active 없음) 등 백엔드 메시지를 그대로 노출
       const msg = e instanceof ApiError ? e.message : '티어 변경에 실패했어요.'
       toast.error(msg)
     },
@@ -102,6 +108,8 @@ export function PricingSection() {
         {plans.map((plan) => {
           const isHighlighted = plan.tier === HIGHLIGHTED_TIER
           const isCurrent = mySubscription?.tier === plan.tier
+          // 동시에 여러 티어 버튼을 눌렀을 때 클릭한 카드만 "변경 중..." 표시되도록
+          // variables(가장 최근 mutate에 넘긴 값)와 이 카드의 tier가 같을 때만 true
           const isPending =
             changeTier.isPending && changeTier.variables === plan.tier
 
