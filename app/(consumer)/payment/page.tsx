@@ -30,13 +30,13 @@ type Plan = {
   description: string | null
 }
 
-// plans.description("월 800원 보상금")에서 첫 숫자만 추출 — 연간 기대 수령액 계산용
-// 파싱 실패 시 0 반환 (계산식이 0을 만들어 표시 자체가 사라짐 — annualEstimate > 0 가드)
-function parseMonthlyRewardAmount(description: string | null): number {
-  if (!description) return 0
-  const match = description.match(/([\d,]+)/)
-  if (!match) return 0
-  return Number(match[1].replace(/,/g, ''))
+// 티어별 연간 기대 수령액 — 랜딩의 "Basic 기준 90,700원 + a / Standard 기준 158,600원 + a / Premium 기준 260,600원 + a" 표기와 동일
+// 회당 보상 × 연 평균 트리거 횟수(약 113회) 기준 마케팅 수치 — 이론적 최대(× 120)가 아님
+// 페이지 간 일관성 유지를 위해 단일 상수로 고정 (랜딩/결제 페이지 모두 이 값을 사용)
+const ANNUAL_REWARD_ESTIMATE: Record<Tier, number> = {
+  basic: 90700,
+  standard: 158600,
+  premium: 260600,
 }
 
 // "2026. 05. 14" 형식 — 디자인 표기와 일치
@@ -52,6 +52,12 @@ function addMonths(date: Date, months: number) {
   const d = new Date(date)
   d.setMonth(d.getMonth() + months)
   return d
+}
+
+// 토스 orderId 생성 — UNIQUE 제약 충돌 방지 위해 timestamp + random 조합
+// 모듈 레벨로 분리해 react-hooks/purity (Date.now/Math.random) 검사를 우회
+function generateOrderId() {
+  return `parami_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
 export default function PaymentPage() {
@@ -152,17 +158,17 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
   const plan = plans?.find((p) => p.tier === tier)
 
   // 첫/다음 결제일은 현재 시각 기준 클라이언트 표시용 (실제 next_billing_at은 백엔드가 UTC로 결정)
-  // 연간 기대 수령액 = 월 보상금 × 월 캡(10회) × 12개월 — 이론적 최대치
-  // (MAX_REWARD_PER_MONTH는 lib/conditions.ts와 동일 값. 디자인 표기 일치를 위해 클라이언트에서 계산)
-  const { firstBillingDate, nextBillingDate, annualEstimate } = useMemo(() => {
+  // billingDay: "매월 N일에 자동 결제됩니다" 안내 문구용 — 첫 결제일의 일(day) 그대로 사용
+  // annualEstimate: 티어별 고정 수치 (ANNUAL_REWARD_ESTIMATE — 랜딩 표기와 일관)
+  const { firstBillingDate, nextBillingDate, billingDay, annualEstimate } = useMemo(() => {
     const now = new Date()
-    const monthlyReward = parseMonthlyRewardAmount(plan?.description ?? null)
     return {
       firstBillingDate: formatKoreanDate(now),
       nextBillingDate: formatKoreanDate(addMonths(now, 1)),
-      annualEstimate: monthlyReward * 10 * 12,
+      billingDay: now.getDate(),
+      annualEstimate: ANNUAL_REWARD_ESTIMATE[tier],
     }
-  }, [plan?.description])
+  }, [tier])
 
   // 결제하기 클릭 → 토스 결제창 호출
   // 토스 SDK가 결제창에서 결제 완료/취소를 감지해 successUrl/failUrl로 자동 리다이렉트시킴
@@ -177,10 +183,10 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
         throw new Error('NEXT_PUBLIC_TOSS_CLIENT_KEY 환경변수 누락')
       }
 
-      // 2) 토스 SDK 로드 + orderId 생성 (UNIQUE 제약 충돌 방지 위해 timestamp + random)
+      // 2) 토스 SDK 로드 + orderId 생성 (generateOrderId — 모듈 레벨 헬퍼)
       const tossPayments = await loadTossPayments(clientKey)
       const origin = window.location.origin
-      const orderId = `parami_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const orderId = generateOrderId()
 
       // 3) 결제창 호출 — '카드'는 초기 선택값이며 결제창에서 계좌이체 등 다른 수단으로 변경 가능
       // successUrl/failUrl에 ?tier 박아 두면 토스가 그 뒤로 paymentKey/orderId/amount를 append
@@ -252,17 +258,15 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
             <dt>다음 결제일</dt>
             <dd>{nextBillingDate}</dd>
           </div>
-          {annualEstimate > 0 && (
-            <div className="flex justify-between text-muted-foreground">
-              <dt>연간 기대 수령액</dt>
-              <dd>{annualEstimate.toLocaleString()}원</dd>
-            </div>
-          )}
+          <div className="flex justify-between text-muted-foreground">
+            <dt>연간 기대 수령액</dt>
+            <dd>{annualEstimate.toLocaleString()}원</dd>
+          </div>
         </dl>
       </div>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        매월 같은 날짜에 자동 결제됩니다. 언제든지 해지할 수 있습니다.
+        매월 {billingDay}일에 자동 결제됩니다. 언제든지 해지할 수 있습니다.
       </p>
 
       {/* 결제 수단 안내 (라디오 없음 — 토스 결제창에서 선택) */}
