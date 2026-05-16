@@ -243,7 +243,7 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
       </Button>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        결제 시 이용약관 및 개인정보 처리방침에 동의하게 돼요.
+        결제하면 이용약관과 개인정보 처리방침에 동의한 것으로 간주돼요.
       </p>
     </div>
   )
