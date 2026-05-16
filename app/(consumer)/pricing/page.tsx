@@ -21,7 +21,7 @@ export default function PricingPage() {
           보상받을 준비가 되셨나요?
         </h2>
         <p className="mt-3 text-sm text-muted-foreground">
-          이메일 주소를 입력하고 시작하세요! 월 7,400원부터 시작해요
+          이메일만 있으면 바로 시작할 수 있어요. 월 7,400원부터요.
         </p>
         <Button asChild variant="outline" size="lg" className="mt-6">
           <Link href="/signup">시작하기</Link>

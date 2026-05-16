@@ -62,7 +62,7 @@ export function PricingSection() {
     mutationFn: (newTier: Tier) =>
       api.patch('/api/subscriptions/change-tier', { newTier }),
     onSuccess: () => {
-      toast.success('티어 변경이 예약됐어요. 다음 결제 시점에 적용돼요.')
+      toast.success('변경 예약 완료! 다음 결제일부터 새 티어가 적용돼요.')
       queryClient.invalidateQueries({ queryKey: ['subscriptions', 'me'] })
     },
     onError: (e) => {
