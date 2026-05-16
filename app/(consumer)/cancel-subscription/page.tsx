@@ -72,10 +72,10 @@ export default function CancelSubscriptionPage() {
           <p className="font-semibold">해지 시 주의사항</p>
         </div>
         <ul className="mt-3 space-y-1.5 pl-7 text-sm text-foreground">
-          <li className="list-disc">해지 즉시 보상 지급이 중단돼요</li>
-          <li className="list-disc">이미 발생한 트리거에 대한 보상은 지급돼요</li>
-          <li className="list-disc">남은 결제 기간에 대한 환불은 불가능해요</li>
-          <li className="list-disc">재가입 시 신규 가입으로 처리돼요</li>
+          <li className="list-disc">해지하면 보상 지급이 바로 멈춰요</li>
+          <li className="list-disc">이미 발생한 보상은 그대로 받을 수 있어요</li>
+          <li className="list-disc">남은 결제 기간은 환불되지 않아요</li>
+          <li className="list-disc">다시 가입하면 새 가입으로 처리돼요</li>
         </ul>
       </div>
 
@@ -100,7 +100,7 @@ export default function CancelSubscriptionPage() {
             onChange={(e) => setAgreed(e.target.checked)}
             className="h-4 w-4 cursor-pointer rounded border-input text-primary focus:ring-ring"
           />
-          위 주의사항을 확인했으며, 결제 해지에 동의해요.
+          위 주의사항을 확인했고, 해지에 동의해요.
         </label>
       </div>
 
