@@ -219,18 +219,17 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
       </div>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        매월 {billingDay}일에 자동 결제됩니다. 언제든지 해지할 수 있습니다.
+        토스페이먼츠 단건 결제 — 자동 갱신되지 않으며, 매월 {billingDay}일 직접 결제로 갱신하세요.
       </p>
 
-      {/* 결제 수단 안내 (라디오 없음 — 토스 결제창에서 선택) */}
+      {/* 결제 수단: requestPayment('카드') 호출이라 카드만 노출 (멀티 수단 필요 시 widget SDK로 전환) */}
       <div className="mt-6 rounded-lg bg-muted/50 p-5">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <CreditCard className="h-4 w-4" />
           결제 수단
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          토스페이먼츠를 통해 안전하게 결제됩니다. 다음 화면에서 카드 또는 계좌이체를 선택할
-          수 있습니다.
+          토스페이먼츠를 통해 카드로 안전하게 결제됩니다.
         </p>
       </div>
 
