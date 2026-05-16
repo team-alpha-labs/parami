@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 
+// 개발 전용 진단 엔드포인트
+// 인증 없이 외부 기상 API(KMA, 에어코리아)를 호출하므로 운영에서 노출되면
+// API 할당량 소진 가능 → production에선 404 처리하고 개발 환경에서만 동작
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { success: false, error: '운영 환경에서는 제공되지 않습니다.' },
+      { status: 404 },
+    )
+  }
+
   const kmaKey = process.env.KMA_API_KEY
   const airKey = process.env.AIRKOREA_API_KEY
 
