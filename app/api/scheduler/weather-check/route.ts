@@ -5,10 +5,8 @@ import { insertWeatherLog } from '@/lib/queries/weather'
 import { evaluateTriggers, toKstDateString } from '@/lib/triggers'
 import { insertTriggerLog } from '@/lib/queries/triggers'
 import { getRewardAmount, getKstYearMonth } from '@/lib/rewards'
-import { MAX_REWARD_PER_MONTH } from '@/lib/conditions'
 import {
   getEligibleUsersForReward,
-  getMonthlyRewardCount,
   payoutReward,
 } from '@/lib/queries/rewards'
 
@@ -103,12 +101,9 @@ function isAuthorized(request: NextRequest): boolean {
 
 // 한 트리거에 대해 자격 있는 유저들에게 순차로 보상 지급
 // - 한 유저의 트랜잭션 실패가 다른 유저 지급을 막지 않도록 try/catch로 격리
-// - 단일 스케줄러 실행 내 순차 처리는 안전.
-// - 잔여 리스크: 캡 체크(getMonthlyRewardCount)가 트랜잭션 밖이라
-//   동시 호출(Cloud Scheduler at-least-once 재시도, 수동 호출 등)이
-//   서로 다른 trigger_log_id로 진입하면 월 캡 초과 가능. 보강 예정:
-//   트랜잭션 안에서 SELECT users.id FOR UPDATE로 유저 단위 락.
-//   SCHEDULER_SECRET은 미인가 호출만 차단할 뿐 동시성 제어가 아님.
+// - 월 캡 체크 + INSERT + balance 증감은 payoutReward 한 트랜잭션 안에서
+//   users 행 X-lock으로 직렬화됨 (Cloud Scheduler at-least-once 재시도나
+//   수동 중복 호출에도 월 10회 초과 차단)
 async function payoutForTrigger(
   trigger_log_id: number,
   measured_at: Date,
@@ -128,16 +123,6 @@ async function payoutForTrigger(
 
   for (const u of eligible) {
     try {
-      const monthCount = await getMonthlyRewardCount({
-        user_id: u.user_id,
-        year,
-        month,
-      })
-      if (monthCount >= MAX_REWARD_PER_MONTH) {
-        capped++
-        continue
-      }
-
       const amount = getRewardAmount(u.tier)
       const r = await payoutReward({
         user_id: u.user_id,
@@ -147,7 +132,8 @@ async function payoutForTrigger(
         year,
         month,
       })
-      if (r.inserted) paid++
+      if (r.outcome === 'paid') paid++
+      else if (r.outcome === 'capped') capped++
       else already_paid++
     } catch (e) {
       console.error(
