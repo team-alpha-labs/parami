@@ -219,7 +219,7 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
       </div>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        토스페이먼츠 단건 결제 — 자동 갱신되지 않으며, 매월 {billingDay}일 직접 결제로 갱신하세요.
+        자동으로 갱신되지 않아요. 매월 {billingDay}일에 직접 결제해야 이어서 이용할 수 있어요.
       </p>
 
       {/* 결제 수단: requestPayment('카드') 호출이라 카드만 노출 (멀티 수단 필요 시 widget SDK로 전환) */}
