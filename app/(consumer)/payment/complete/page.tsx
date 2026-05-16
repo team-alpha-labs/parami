@@ -1,3 +1,7 @@
+// /payment/complete — 결제 confirm 성공 후 도달하는 정적 안내 페이지
+// /payment의 success 모드에서 router.replace로 이동시키며, 직접 접근해도 동일 화면 노출
+// API 호출 없음 (실제 결제 처리는 /payment success 콜백에서 이미 끝남)
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
