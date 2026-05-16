@@ -75,13 +75,17 @@ For multi-step tasks, state a brief plan:
 
 | 항목 | 내용 |
 | --- | --- |
-| Frontend / Backend | Next.js (App Router) |
+| Frontend / Backend | Next.js 16 (App Router) — ⚠️ middleware → `proxy.ts`로 이름 변경됨 |
 | DB | MySQL + mysql2 |
 | 배포 | GCP |
 | 결제 | 토스페이먼츠 단건 결제 (월 단위 구독 형태로 운영, 자동 갱신 X) |
 | 로그인 | 자체 JWT (소셜 로그인은 추후 추가) |
 | 스케줄러 | GCP Cloud Scheduler + Next.js API Route |
-| 스타일 | Tailwind CSS |
+| 스타일 | Tailwind CSS v4 (CSS-first config — tailwind.config 파일 없음, `app/globals.css`의 `@theme`에 토큰 정의) |
+| UI 컴포넌트 | shadcn/ui (Button, Input, Card, Badge, Label 기초 — `components/ui/`) |
+| 폰트 | Pretendard Variable (npm 패키지) |
+| 클라이언트 상태 | TanStack Query (서버 상태 캐싱·재시도·loading) |
+| 토스트 알림 | sonner (`<Toaster />`는 components/providers.tsx에 등록됨) |
 
 ---
 
@@ -90,8 +94,11 @@ For multi-step tasks, state a brief plan:
 ```
 parami/
 ├── app/
+│   ├── layout.tsx            # Root layout — Header/Footer/Providers 자동 wrap
+│   ├── page.tsx              # 랜딩 (/)
+│   ├── globals.css           # Tailwind v4 디자인 토큰 (@theme)
 │   ├── (auth)/               # 로그인 / 회원가입 페이지
-│   ├── (consumer)/           # 소비자 페이지 (메인, 상품, 대시보드, 보상내역)
+│   ├── (consumer)/           # 소비자 페이지 (홈, 마이페이지, 결제, 보상내역 등)
 │   ├── (admin)/              # 관리자 페이지
 │   └── api/
 │       ├── auth/             # 회원가입 / 로그인 / 로그아웃
@@ -102,20 +109,39 @@ parami/
 │       ├── rewards/          # 보상 내역 조회
 │       ├── scheduler/        # Cloud Scheduler 수신 엔드포인트
 │       └── admin/            # 관리자 조회
-├── components/               # 공통 컴포넌트
+├── components/
+│   ├── ui/                   # shadcn/ui 기초 (Button, Input, Card, Badge, Label)
+│   ├── header.tsx            # 공통 상단 nav (서버 컴포넌트 — 쿠키 세션 분기)
+│   ├── footer.tsx            # 공통 푸터
+│   ├── providers.tsx         # TanStack Query + sonner Toaster
+│   └── logout-button.tsx     # 로그아웃 (클라이언트)
 ├── lib/
 │   ├── db.ts                 # MySQL 연결 (mysql2/promise pool)
-│   ├── auth.ts               # JWT 유틸 (sign / verify / getSession / requireUser / requireAdmin)
-│   ├── oauth.ts              # 카카오 / 구글 OAuth 헬퍼 (스캐폴드, 키 설정 후 활성화)
-│   ├── weather.ts            # 기상청 + 에어코리아 API 호출·파싱 (fetchWeatherSnapshot)
+│   ├── auth.ts               # JWT 유틸 (API Route용 — sign/verify/requireUser/requireAdmin)
+│   ├── auth-server.ts        # 서버 컴포넌트용 getServerSession (next/headers cookies 기반)
+│   ├── client.ts             # 프론트 API fetcher — {success,data} 자동 처리 + ApiError throw
+│   ├── utils.ts              # cn 헬퍼 (clsx + tailwind-merge, shadcn 표준)
+│   ├── oauth.ts              # 카카오 / 구글 OAuth 헬퍼 (스캐폴드)
+│   ├── weather.ts            # 기상청 + 에어코리아 API 호출·파싱
 │   ├── conditions.ts         # 트리거 조건값 상수 (하드코딩)
 │   ├── plans.ts              # 구독 가격표 DB 조회
-│   ├── api.ts                # 응답 헬퍼 ok() / err()
-│   └── queries/              # 테이블별 DB 쿼리 함수 분리 (users.ts 등)
-├── hooks/                    # Custom Hooks
+│   ├── api.ts                # 백엔드 응답 헬퍼 ok() / err()
+│   ├── rewards.ts            # 보상 헬퍼
+│   ├── triggers.ts           # 트리거 판정 로직
+│   ├── toss.ts               # 토스 결제 헬퍼 (cancelTossPayment 등)
+│   └── queries/              # 테이블별 DB 쿼리 함수 분리 (users/payments/subscriptions/...)
+├── hooks/
+│   └── use-me.ts             # 로그인 유저 정보 훅 (다른 도메인 훅의 본보기)
 ├── types/                    # TypeScript 타입 정의 (db.ts 포함)
 ├── db/                       # schema.sql, schema.erd.json
-└── docs/                     # SETUP.md, API.md, proposal.md 등 운영 문서
+├── docs/
+│   ├── frontend-guide.md     # ★ 프론트 페이지 작업자 필독 가이드
+│   ├── figma/                # ★ 페이지별 디자인 PNG (consumer/admin/auth/nav/components)
+│   ├── SETUP.md
+│   └── proposal.md 등
+├── proxy.ts                  # ★ Next.js 16 라우트 가드 (구 middleware)
+├── components.json           # shadcn/ui CLI config
+└── postcss.config.mjs        # Tailwind v4 postcss 플러그인
 ```
 
 ---
@@ -286,6 +312,23 @@ Cloud Scheduler (매 시간, KST)
 // 실패
 { success: false, error: "에러 메시지" }
 ```
+
+**프론트엔드 규칙**
+
+- API 호출은 `lib/client.ts`의 `api.get / api.post / api.patch / api.delete` 사용 — raw `fetch` 직접 호출 금지 (envelope 처리 빠뜨림)
+- 색상·간격·라운드는 `app/globals.css`의 `@theme` 토큰만 사용 — 임의 hex(`#xxxxxx`) 직접 입력 금지. 토큰 없으면 우석에게 알려서 추가
+- 공통 컴포넌트는 `components/ui/` (shadcn/ui) 우선 사용 — 비슷한 컴포넌트 새로 만들기 전에 거기 먼저 확인
+- 모바일 디자인 우선 + Tailwind 반응형 prefix (`md:` `lg:`)로 데스크탑 확장 (B안 — 디자인 없는 데스크탑 레이아웃은 `home-alt-2` / admin 패턴 참고)
+- 페이지 1장 = PR 1장 (한 PR에 여러 페이지 묶지 말 것)
+- 페이지 작업 전 `docs/frontend-guide.md` 가이드 읽기 (페이지 위치 컨벤션 / 자주 쓰는 5가지 코드 패턴 / 디자인 토큰 사용법 / PR 만드는 법)
+- 디자인은 `docs/figma/` 폴더의 PNG 참조 (코드의 라우트 그룹과 1:1 매핑)
+
+**Next.js 16 주의사항**
+
+- middleware → `proxy.ts`로 이름 변경. 함수도 `middleware()` 아니라 `proxy()` (동작은 동일)
+- `jsonwebtoken`은 Edge 런타임 미지원 → `proxy.ts`에선 토큰 존재 여부만 optimistic 체크. 실제 role 검증은 페이지 서버 컴포넌트 또는 API 라우트에서
+- 폰트는 next/font/google에 없는 한글 폰트(Pretendard)라 npm 패키지 + `app/globals.css`에서 `@import`로 로드
+- 헷갈리면 `node_modules/next/dist/docs/01-app/` 안에서 검색 (training data와 다른 버전이라 옛 문법 쓰지 않게 주의)
 
 **환경변수 목록** (`.env.local`)
 
