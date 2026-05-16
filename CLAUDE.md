@@ -137,26 +137,27 @@ GET    /api/auth/google/callback
 
 [ 결제/구독 ]
 GET   /api/plans                       # 티어 목록 조회                ✅ 구현됨
-POST  /api/payments/confirm            # 토스 결제 승인 + 구독 생성   ⏳ 예정
+POST  /api/payments/confirm            # 토스 결제 승인 + 구독 생성    ✅ 구현됨
 GET   /api/payments/me                 # 내 결제 내역                  ✅ 구현됨
 GET   /api/subscriptions/me            # 내 구독 상태 조회             ✅ 구현됨
-PATCH /api/subscriptions/change-tier   # 티어 변경                     ⏳ 예정
-PATCH /api/subscriptions/cancel        # 구독 해지                     ⏳ 예정
+PATCH /api/subscriptions/change-tier   # 티어 변경                     ✅ 구현됨
+PATCH /api/subscriptions/cancel        # 구독 해지                     ✅ 구현됨
 
 [ 날씨/보상 ]
 GET /api/weather/current        # 현재 날씨 조회                       ✅ 구현됨
 GET /api/rewards/me             # 내 보상 내역                         ✅ 구현됨
 GET /api/rewards/summary        # 내 누적 보상 요약                    ✅ 구현됨
 
-[ 스케줄러 ]  ⏳ 예정
-POST /api/scheduler/weather-check  # Cloud Scheduler → 날씨 수집 → 트리거 → 보상
+[ 스케줄러 ]  ✅ 구현됨
+POST /api/scheduler/weather-check         # Cloud Scheduler → 날씨 수집 → 트리거 → 보상
+POST /api/scheduler/expire-subscriptions  # 만료된 구독 자동 처리 (status=expired)
 
 [ 관리자 ]
 GET /api/admin/users            # 유저 목록                            ✅ 구현됨
 GET /api/admin/subscriptions    # 구독 현황                            ✅ 구현됨
 GET /api/admin/payments         # 결제 내역                            ✅ 구현됨
-GET /api/admin/triggers         # 트리거 발동 내역                     ⏳ 예정
-GET /api/admin/rewards          # 보상 지급 내역                       ⏳ 예정
+GET /api/admin/triggers         # 트리거 발동 내역                     ✅ 구현됨
+GET /api/admin/rewards          # 보상 지급 내역                       ✅ 구현됨
 ```
 
 ---
