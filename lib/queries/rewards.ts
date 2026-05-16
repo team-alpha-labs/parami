@@ -4,6 +4,7 @@ import pool from '@/lib/db'
 import { RowDataPacket, ResultSetHeader } from 'mysql2'
 import { RewardRow } from '@/types/db'
 import type { Tier } from '@/lib/rewards'
+import { MAX_REWARD_PER_MONTH } from '@/lib/conditions'
 
 // 특정 user의 보상 내역 전체 조회 (최신순)
 // tier_at_reward: 지급 당시 티어 스냅샷 (현재 티어 바뀌어도 과거 기록 유지)
@@ -95,25 +96,17 @@ export async function getEligibleUsersForReward(): Promise<RewardEligibleRow[]> 
   return rows as RewardEligibleRow[]
 }
 
-// 특정 user의 해당 (KST) 연/월 보상 횟수 — 월 10회 캡 체크용
-export async function getMonthlyRewardCount(args: {
-  user_id: number
-  year: number
-  month: number
-}): Promise<number> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS cnt FROM reward_logs
-     WHERE user_id = ? AND reward_year = ? AND reward_month = ?`,
-    [args.user_id, args.year, args.month],
-  )
-  return Number(rows[0].cnt)
-}
+// 보상 지급 단일 트랜잭션 (월 캡 포함):
+//   1) SELECT users FOR UPDATE        — 같은 유저 동시 호출 직렬화
+//   2) 월 보상 횟수 카운트 → MAX_REWARD_PER_MONTH 초과면 capped
+//   3) reward_logs INSERT IGNORE       (UNIQUE(user_id, trigger_log_id) → already_paid)
+//   4) users.balance += amount
+//
+// 캡 체크가 트랜잭션 밖에 있으면 동시 호출 시 같은 유저가 월 10회 초과 지급될 수 있음.
+// users 행 X-lock으로 같은 user_id에 대한 보상 처리를 한 번에 하나로 직렬화 → race 차단.
+// 서로 다른 유저는 락이 분리되므로 병렬 처리 영향 없음.
+export type PayoutOutcome = 'paid' | 'capped' | 'already_paid'
 
-// 보상 지급 단일 트랜잭션:
-//   1) reward_logs INSERT  (UNIQUE(user_id, trigger_log_id)로 중복 방지)
-//   2) users.balance += amount
-// 두 동작이 원자적으로 함께 성공/실패해야 잔액-내역 불일치가 안 생긴다.
-// 반환: inserted=true(신규 지급) / inserted=false(UNIQUE 위반으로 이미 지급됨)
 export async function payoutReward(args: {
   user_id: number
   trigger_log_id: number
@@ -121,12 +114,37 @@ export async function payoutReward(args: {
   tier: Tier
   year: number
   month: number
-}): Promise<{ inserted: boolean }> {
+}): Promise<{ outcome: PayoutOutcome }> {
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
 
-    // INSERT IGNORE: 같은 user_id+trigger_log_id 조합이 이미 있으면 조용히 스킵
+    // 1) 유저 행에 X-lock — 같은 유저 동시 진입 직렬화
+    // (FOR UPDATE는 locking read라 스냅샷과 무관하게 latest committed를 본다)
+    const [userRows] = await conn.query<RowDataPacket[]>(
+      `SELECT id FROM users WHERE id = ? FOR UPDATE`,
+      [args.user_id],
+    )
+    if (userRows.length === 0) {
+      // FK 검증 — 유저 삭제 등 비정상 케이스
+      await conn.rollback()
+      throw new Error(`user not found: ${args.user_id}`)
+    }
+
+    // 2) 락 획득 후 월 보상 횟수 카운트
+    // 락을 잡고 있는 동안 다른 트랜잭션이 같은 유저 reward_logs를 INSERT할 수 없으므로
+    // 여기서 본 카운트가 INSERT 직전까지 유효
+    const [cntRows] = await conn.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS cnt FROM reward_logs
+       WHERE user_id = ? AND reward_year = ? AND reward_month = ?`,
+      [args.user_id, args.year, args.month],
+    )
+    if (Number(cntRows[0].cnt) >= MAX_REWARD_PER_MONTH) {
+      await conn.rollback()
+      return { outcome: 'capped' }
+    }
+
+    // 3) INSERT IGNORE: 같은 user_id+trigger_log_id 조합이 이미 있으면 조용히 스킵
     // (스케줄러 재시도로 같은 트리거를 두 번 처리해도 잔액이 두 번 늘지 않음)
     const [ins] = await conn.execute<ResultSetHeader>(
       `INSERT IGNORE INTO reward_logs
@@ -145,7 +163,7 @@ export async function payoutReward(args: {
     if (ins.affectedRows === 0) {
       // 이미 지급된 트리거 — 잔액 증가도 건너뜀
       await conn.commit()
-      return { inserted: false }
+      return { outcome: 'already_paid' }
     }
 
     await conn.execute(
@@ -154,7 +172,7 @@ export async function payoutReward(args: {
     )
 
     await conn.commit()
-    return { inserted: true }
+    return { outcome: 'paid' }
   } catch (e) {
     await conn.rollback()
     throw e
