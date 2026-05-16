@@ -2,14 +2,14 @@
 
 // /payment — 토스 결제 흐름 전체를 한 페이지에서 처리 (select / success / fail)
 //
-// 모드 분기는 URL 쿼리로 결정:
-//   - ?tier=basic|standard|premium                → select: 요금제 표시 + 결제하기
-//   - ?paymentKey & ?orderId & ?amount (+ ?tier)  → success: confirm 호출 → /payment/complete
-//   - ?code & ?message                            → fail: 에러 표시 + 요금제로 돌아가기
+// 모드 분기는 URL 쿼리로:
+//   - ?tier                                       → select: 요금제 표시 + 결제하기
+//   - ?paymentKey & ?orderId & ?amount (+ ?tier)  → success: confirm → /payment/complete
+//   - ?code & ?message                            → fail: 에러 표시
 //
-// 결제수단 라디오는 의도적으로 생략 — 토스 결제창에서 카드/계좌이체가 자동 노출됨
+// 결제수단 라디오는 의도적으로 생략 — 토스 결제창에서 카드/계좌이체 자동 노출
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -20,26 +20,19 @@ import { useMe } from '@/hooks/use-me'
 import { Button } from '@/components/ui/button'
 
 type Tier = 'basic' | 'standard' | 'premium'
+type Plan = { tier: Tier; name: string; price: number }
+
 const VALID_TIERS: Tier[] = ['basic', 'standard', 'premium']
 
-type Plan = {
-  id: number
-  tier: Tier
-  name: string
-  price: number
-  description: string | null
-}
-
-// 티어별 연간 기대 수령액 — 랜딩의 "Basic 기준 90,700원 + a / Standard 기준 158,600원 + a / Premium 기준 260,600원 + a" 표기와 동일
-// 회당 보상 × 연 평균 트리거 횟수(약 113회) 기준 마케팅 수치 — 이론적 최대(× 120)가 아님
-// 페이지 간 일관성 유지를 위해 단일 상수로 고정 (랜딩/결제 페이지 모두 이 값을 사용)
+// 랜딩의 "Basic 90,700원 / Standard 158,600원 / Premium 260,600원 + a" 표기와 일관
+// 회당 보상 × 연 평균 트리거 횟수(약 113회) 마케팅 수치 — 이론적 최대 아님
 const ANNUAL_REWARD_ESTIMATE: Record<Tier, number> = {
   basic: 90700,
   standard: 158600,
   premium: 260600,
 }
 
-// "2026. 05. 14" 형식 — 디자인 표기와 일치
+// "2026. 05. 14" 디자인 표기
 function formatKoreanDate(date: Date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -47,15 +40,19 @@ function formatKoreanDate(date: Date) {
   return `${y}. ${m}. ${d}`
 }
 
-// 다음 결제일 표시용 단순 +N개월 — 실제 next_billing_at은 confirm 후 백엔드가 결정 (UTC 기준)
-function addMonths(date: Date, months: number) {
-  const d = new Date(date)
-  d.setMonth(d.getMonth() + months)
-  return d
+// react-hooks/purity 룰 우회용 모듈 레벨 헬퍼 (new Date / Math.random / Date.now)
+function getBillingInfo(tier: Tier) {
+  const now = new Date()
+  const next = new Date(now)
+  next.setMonth(next.getMonth() + 1)
+  return {
+    firstBillingDate: formatKoreanDate(now),
+    nextBillingDate: formatKoreanDate(next),
+    billingDay: now.getDate(),
+    annualEstimate: ANNUAL_REWARD_ESTIMATE[tier],
+  }
 }
 
-// 토스 orderId 생성 — UNIQUE 제약 충돌 방지 위해 timestamp + random 조합
-// 모듈 레벨로 분리해 react-hooks/purity (Date.now/Math.random) 검사를 우회
 function generateOrderId() {
   return `parami_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
@@ -79,7 +76,6 @@ function PaymentInner() {
   const searchParams = useSearchParams()
   const { data: me, isLoading: meLoading } = useMe()
 
-  // URL 쿼리에서 토스 콜백 / 요금제 선택 파라미터 추출
   const paymentKey = searchParams.get('paymentKey')
   const orderIdParam = searchParams.get('orderId')
   const amountParam = searchParams.get('amount')
@@ -87,26 +83,19 @@ function PaymentInner() {
   const failMessage = searchParams.get('message')
   const tierParam = searchParams.get('tier')
 
-  // 한 페이지 3가지 분기 — paymentKey/code 유무로 토스 콜백 여부 판정
-  const mode: 'success' | 'fail' | 'select' =
-    paymentKey && orderIdParam && amountParam ? 'success' : failCode ? 'fail' : 'select'
-
-  if (mode === 'success') {
+  if (paymentKey && orderIdParam && amountParam) {
     return (
       <ConfirmingPayment
-        paymentKey={paymentKey!}
-        orderId={orderIdParam!}
+        paymentKey={paymentKey}
+        orderId={orderIdParam}
         amount={Number(amountParam)}
         onSuccess={() => router.replace('/payment/complete')}
       />
     )
   }
 
-  if (mode === 'fail') {
-    return <PaymentFailed code={failCode!} message={failMessage} />
-  }
+  if (failCode) return <PaymentFailed code={failCode} message={failMessage} />
 
-  // 이하 'select' 모드 — 요금제 선택해서 결제하기
   if (meLoading) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center text-sm text-muted-foreground">
@@ -114,20 +103,9 @@ function PaymentInner() {
       </div>
     )
   }
+  // proxy.ts가 비로그인 사용자를 /login으로 리다이렉트하므로 me는 항상 존재
+  if (!me) return null
 
-  // proxy.ts가 비로그인 사용자를 /login으로 보내므로 정상 흐름에선 도달 X — 안전망
-  if (!me) {
-    return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <p className="text-foreground">로그인이 필요해요.</p>
-        <Button asChild className="mt-4">
-          <Link href="/login">로그인하러 가기</Link>
-        </Button>
-      </div>
-    )
-  }
-
-  // tier 쿼리 누락/오타 케이스 — /pricing에서 정상적으로 넘어오면 항상 있음
   if (!tierParam || !VALID_TIERS.includes(tierParam as Tier)) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
@@ -142,65 +120,40 @@ function PaymentInner() {
   return <PaymentSelect tier={tierParam as Tier} customerName={me.name} />
 }
 
-// select 모드: 요금제 요약 표시 + 토스 결제창 호출
+// select 모드: 요금제 요약 + 토스 결제창 호출
 function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: string }) {
   const [requesting, setRequesting] = useState(false)
 
-  const {
-    data: plans,
-    isLoading,
-    error,
-  } = useQuery<Plan[]>({
+  const { data: plans, isLoading, error } = useQuery<Plan[]>({
     queryKey: ['plans'],
     queryFn: () => api.get<Plan[]>('/api/plans'),
   })
 
   const plan = plans?.find((p) => p.tier === tier)
+  const { firstBillingDate, nextBillingDate, billingDay, annualEstimate } = getBillingInfo(tier)
 
-  // 첫/다음 결제일은 현재 시각 기준 클라이언트 표시용 (실제 next_billing_at은 백엔드가 UTC로 결정)
-  // billingDay: "매월 N일에 자동 결제됩니다" 안내 문구용 — 첫 결제일의 일(day) 그대로 사용
-  // annualEstimate: 티어별 고정 수치 (ANNUAL_REWARD_ESTIMATE — 랜딩 표기와 일관)
-  const { firstBillingDate, nextBillingDate, billingDay, annualEstimate } = useMemo(() => {
-    const now = new Date()
-    return {
-      firstBillingDate: formatKoreanDate(now),
-      nextBillingDate: formatKoreanDate(addMonths(now, 1)),
-      billingDay: now.getDate(),
-      annualEstimate: ANNUAL_REWARD_ESTIMATE[tier],
-    }
-  }, [tier])
-
-  // 결제하기 클릭 → 토스 결제창 호출
-  // 토스 SDK가 결제창에서 결제 완료/취소를 감지해 successUrl/failUrl로 자동 리다이렉트시킴
+  // 토스 결제창 호출 — 성공/취소 시 successUrl/failUrl로 자동 리다이렉트
+  // successUrl에 ?tier 박아두면 토스가 결과 쿼리를 그 뒤로 append → confirm body로 전달
+  // (신규 가입자엔 필수, 기존 구독자는 서버가 pending_tier ?? current_tier로 덮어씀)
   const onPay = async () => {
     if (!plan) return
     setRequesting(true)
-
     try {
-      // 1) 토스 client key 확인 — NEXT_PUBLIC_ 접두 필수 (브라우저 노출용)
       const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY
-      if (!clientKey) {
-        throw new Error('NEXT_PUBLIC_TOSS_CLIENT_KEY 환경변수 누락')
-      }
+      if (!clientKey) throw new Error('NEXT_PUBLIC_TOSS_CLIENT_KEY 환경변수 누락')
 
-      // 2) 토스 SDK 로드 + orderId 생성 (generateOrderId — 모듈 레벨 헬퍼)
       const tossPayments = await loadTossPayments(clientKey)
       const origin = window.location.origin
-      const orderId = generateOrderId()
-
-      // 3) 결제창 호출 — '카드'는 초기 선택값이며 결제창에서 계좌이체 등 다른 수단으로 변경 가능
-      // successUrl/failUrl에 ?tier 박아 두면 토스가 그 뒤로 paymentKey/orderId/amount를 append
-      // → 콜백에서 그대로 confirm body로 전달 (신규 가입자엔 필수, 기존 구독자는 서버가 무시)
       await tossPayments.requestPayment('카드', {
         amount: plan.price,
-        orderId,
+        orderId: generateOrderId(),
         orderName: `Parami ${plan.name} 구독`,
         customerName,
         successUrl: `${origin}/payment?tier=${plan.tier}`,
         failUrl: `${origin}/payment?tier=${plan.tier}`,
       })
     } catch (e) {
-      // 사용자가 결제창 닫기 등은 throw됨 — 토스트는 띄우지 않음 (의도적 취소까지 에러 표시하면 UX 방해)
+      // 결제창 닫기 등 의도적 취소도 throw됨 — 토스트 띄우면 UX 방해
       console.warn('토스 결제 요청 중단:', e)
       setRequesting(false)
     }
@@ -297,8 +250,8 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
   )
 }
 
-// success 모드: 토스 성공 콜백 → POST /api/payments/confirm → /payment/complete로 이동
-// confirm 내부에서 토스 API 재검증 + DB 트랜잭션 + 실패 시 자동 환불까지 처리 (lib/queries/payments.ts)
+// success 모드: 토스 성공 콜백 → POST /api/payments/confirm → /payment/complete
+// confirm 내부에서 토스 재검증 + DB 트랜잭션 + 실패 시 자동 환불 (lib/queries/payments.ts)
 function ConfirmingPayment({
   paymentKey,
   orderId,
@@ -311,15 +264,11 @@ function ConfirmingPayment({
   onSuccess: () => void
 }) {
   const searchParams = useSearchParams()
-  // tier는 select 모드에서 successUrl에 박아둔 값 — 신규 가입자는 필수, 기존 구독자는 서버 권위(pending_tier ?? current_tier)로 덮어씀
-  // 누락 케이스(직접 URL 입력 등) 보호를 위해 'basic' 폴백
+  // tier 누락 케이스(직접 URL 입력 등) 보호를 위한 폴백
   const tier = searchParams.get('tier') ?? 'basic'
 
-  const [status, setStatus] = useState<'pending' | 'error'>('pending')
-  const [errorMsg, setErrorMsg] = useState('')
-
-  // React strict mode가 dev에서 effect를 2번 실행 → confirm이 두 번 호출되어
-  // 두 번째 요청이 toss_order_id UNIQUE 충돌로 실패하는 사고 방지
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  // strict mode가 effect를 2번 호출 → toss_order_id UNIQUE 충돌 방지
   const calledRef = useRef(false)
 
   useEffect(() => {
@@ -328,23 +277,15 @@ function ConfirmingPayment({
 
     void (async () => {
       try {
-        await api.post('/api/payments/confirm', {
-          paymentKey,
-          orderId,
-          amount,
-          tier,
-        })
+        await api.post('/api/payments/confirm', { paymentKey, orderId, amount, tier })
         onSuccess()
       } catch (e) {
-        // confirm 실패: 토스 검증/금액 변조/DB 처리 등 다양한 원인 → 백엔드 메시지를 그대로 노출
-        const msg = e instanceof ApiError ? e.message : '결제 처리에 실패했어요.'
-        setErrorMsg(msg)
-        setStatus('error')
+        setErrorMsg(e instanceof ApiError ? e.message : '결제 처리에 실패했어요.')
       }
     })()
   }, [paymentKey, orderId, amount, tier, onSuccess])
 
-  if (status === 'pending') {
+  if (!errorMsg) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <p className="text-foreground">결제를 확정하는 중...</p>
@@ -372,7 +313,7 @@ function ConfirmingPayment({
   )
 }
 
-// fail 모드: 토스 실패 콜백 — 에러 코드/메시지 표시 + 요금제로 돌아가기
+// fail 모드: 토스 실패 콜백
 function PaymentFailed({ code, message }: { code: string; message: string | null }) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-16 text-center">
