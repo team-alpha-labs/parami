@@ -55,22 +55,12 @@ const TIER_LABEL: Record<Tier, string> = {
   premium: 'Premium',
 }
 
-// 티어별 features 체크리스트 — 디자인 그대로
+// 티어별 features 체크리스트 — 디자인 그대로 (룰렛 관련 문구는 향후 도입 시 추가)
 // 향후 DB plans 테이블에 JSON features 컬럼 추가되면 이 상수 제거하고 plan.features 사용
 const TIER_FEATURES: Record<Tier, string[]> = {
-  basic: ['회당 800원 보상', '월 최대 10회 수령', '매 수령 시 기본 룰렛 보상'],
-  standard: [
-    '회당 1,400원 보상',
-    '월 최대 10회 수령',
-    '매 수령 시 기본 룰렛 보상',
-    'Standard 전용 이벤트',
-  ],
-  premium: [
-    '회당 2,300원 보상',
-    '월 최대 10회 수령',
-    '매 수령시 고급 룰렛 보상',
-    'Premium 전용 이벤트',
-  ],
+  basic: ['회당 800원 보상', '월 최대 10회 수령'],
+  standard: ['회당 1,400원 보상', '월 최대 10회 수령', 'Standard 전용 이벤트'],
+  premium: ['회당 2,300원 보상', '월 최대 10회 수령', 'Premium 전용 이벤트'],
 }
 
 export function PricingSection() {
