@@ -1,12 +1,14 @@
 'use client'
 
-// 가입 해지 페이지
-// - 해지 주의사항 안내 + 사유 입력(선택) + 동의 체크박스 + 해지/취소 버튼
-// - 동의 체크박스 ON일 때만 해지하기 버튼 활성화
-// - 해지 성공 시 토스트 → /mypage로 이동
+// /cancel-subscription — active 구독을 cancelled로 전환 (PATCH /api/subscriptions/cancel)
 //
-// 해지 사유(reason) textarea는 디자인상 있지만 백엔드에 저장 필드가 없어 수집만 하고 전송하지 않음
-// (향후 백엔드에서 필드 추가 시 함께 보내도록 수정)
+// 흐름:
+//   1) 주의사항 안내 + 사유 입력(선택) + 동의 체크박스 표시
+//   2) 동의 체크 ON일 때만 해지하기 버튼 활성화 (오조작 방지)
+//   3) 해지 성공 → 토스트 + ['subscriptions','me'] 캐시 무효화 → /mypage로 이동
+//
+// 해지 사유(reason)는 디자인상 수집하지만 백엔드에 저장 필드가 없어 전송하지 않음
+// (향후 백엔드에서 컬럼/필드 추가 시 mutation body로 함께 전송하도록 수정)
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -39,12 +41,14 @@ export default function CancelSubscriptionPage() {
 
   const { data: me, isLoading: meLoading } = useMe()
 
+  // 비로그인 시 useMe가 null → enabled:false로 불필요 호출 차단
   const { data: subscription, isLoading: subLoading } = useQuery<Subscription | null>({
     queryKey: ['subscriptions', 'me'],
     queryFn: () => api.get<Subscription | null>('/api/subscriptions/me'),
     enabled: !!me,
   })
 
+  // 해지 성공 후 캐시 무효화 — /mypage가 ['subscriptions','me']를 다시 fetch해 cancelled 상태 반영
   const cancel = useMutation({
     mutationFn: () => api.patch('/api/subscriptions/cancel'),
     onSuccess: () => {
@@ -53,6 +57,7 @@ export default function CancelSubscriptionPage() {
       router.push('/mypage')
     },
     onError: (e) => {
+      // 404 (해지할 active 구독 없음) 등 백엔드 메시지를 그대로 노출
       const msg = e instanceof ApiError ? e.message : '구독 해지에 실패했어요.'
       toast.error(msg)
     },
@@ -66,6 +71,7 @@ export default function CancelSubscriptionPage() {
     )
   }
 
+  // proxy.ts가 비로그인 차단해서 사실상 도달 X — 안전망
   if (!me) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
@@ -77,6 +83,7 @@ export default function CancelSubscriptionPage() {
     )
   }
 
+  // 신규 가입자 / 이미 해지한 사용자 — 빈 상태 처리
   if (!subscription) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
