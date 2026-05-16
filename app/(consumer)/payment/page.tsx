@@ -229,7 +229,7 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
           결제 수단
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          토스페이먼츠를 통해 카드로 안전하게 결제됩니다.
+          토스페이먼츠를 통해 카드로 안전하게 결제돼요.
         </p>
       </div>
 
@@ -243,7 +243,7 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
       </Button>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        결제 시 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
+        결제 시 이용약관 및 개인정보 처리방침에 동의하게 돼요.
       </p>
     </div>
   )
