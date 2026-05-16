@@ -58,7 +58,22 @@ export async function processConfirmedPayment(
     const billingYear = kst.getUTCFullYear()
     const billingMonth = kst.getUTCMonth() + 1
 
-    // 1) 본인 active 구독 조회 (ORDER BY로 결정적 동작 보장)
+    // 1) 같은 유저 동시 confirm 직렬화 — active 구독 2개 동시 INSERT 방지
+    // schema에 (user_id, status='active') 부분 UNIQUE가 없어 두 confirm이 겹치면
+    // 둘 다 "active 없음" → 둘 다 INSERT로 active 2행 생성 가능.
+    // users 행 X-lock으로 같은 user_id 동시 진입을 한 번에 하나로 직렬화 →
+    // 두 번째 트랜잭션은 첫 번째 커밋 후 진행, active 조회에서 신규 행을 봐서 갱신 경로로 분기.
+    const [userLock] = await conn.query<RowDataPacket[]>(
+      `SELECT id FROM users WHERE id = ? FOR UPDATE`,
+      [userId]
+    )
+    if (userLock.length === 0) {
+      // FK 검증 — 비정상 케이스 (요청 처리 중 유저 삭제 등)
+      await conn.rollback()
+      throw new Error(`user not found: ${userId}`)
+    }
+
+    // 2) 본인 active 구독 조회 (ORDER BY로 결정적 동작 보장)
     const [subRows] = await conn.query<RowDataPacket[]>(
       `SELECT id, user_id, tier, status, next_billing_at, started_at, cancelled_at, pending_tier
        FROM subscriptions
@@ -99,7 +114,7 @@ export async function processConfirmedPayment(
       )
     }
 
-    // 2) payments INSERT
+    // 3) payments INSERT
     // status='success' — 토스 검증 통과 후 이 함수가 호출되므로 항상 성공
     // toss_order_id UNIQUE 제약 → 동일 orderId 두 번 confirm 시도 시 여기서 차단
     // paid_at: UTC_TIMESTAMP() 명시 (schema DEFAULT NOW()는 서버 timezone 의존이라 명시화)
@@ -113,7 +128,7 @@ export async function processConfirmedPayment(
 
     await conn.commit()
 
-    // 3) 결과 반환용 SELECT (commit 후 동일 conn으로 조회)
+    // 4) 결과 반환용 SELECT (commit 후 동일 conn으로 조회)
     // subscription은 최신 상태 (tier/pending_tier/next_billing_at 갱신 반영)
     const [finalSubRows] = await conn.query<RowDataPacket[]>(
       `SELECT id, user_id, tier, status, next_billing_at, started_at, cancelled_at, pending_tier
