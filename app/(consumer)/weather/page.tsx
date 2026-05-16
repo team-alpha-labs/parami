@@ -29,7 +29,9 @@ type WeatherSnapshot = {
 function formatDateTimeKST(s: string | undefined) {
   if (!s) return '-'
   const d = new Date(s)
+  // 브라우저/배포 타임존 무관하게 KST로 고정 (프로젝트 전반 컨벤션과 일치)
   return d.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
