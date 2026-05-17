@@ -6,7 +6,7 @@
 // 흐름:
 //   1) 동의 체크박스 ON → "탈퇴하기" 활성
 //   2) DELETE 요청 → 서버가 토큰 쿠키 무효화 + cascade delete
-//   3) ['me'] 캐시 무효화 + 토스트 + 랜딩(/)으로 이동
+//   3) 전체 캐시 정리 + 토스트 + 랜딩(/)으로 이동
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
