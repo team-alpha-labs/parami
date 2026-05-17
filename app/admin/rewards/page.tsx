@@ -99,7 +99,7 @@ export default function AdminRewardsPage() {
               {filtered.map((reward) => {
                 const badge = TRIGGER_BADGE[reward.trigger_type] ?? {
                   label: reward.trigger_type,
-                  className: 'bg-gray-100 text-gray-600',
+                  className: 'bg-muted text-muted-foreground',
                 }
                 return (
                   <tr key={reward.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
@@ -115,14 +115,14 @@ export default function AdminRewardsPage() {
                         {badge.label}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-medium text-green-600">
+                    <td className="px-6 py-4 font-medium text-success">
                       +{reward.amount.toLocaleString()}원
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
                       {new Date(reward.rewarded_at).toLocaleString('ko-KR')}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
                         완료
                       </span>
                     </td>
