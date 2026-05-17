@@ -125,3 +125,198 @@ export async function listAllRewards(): Promise<AdminRewardRow[]> {
   )
   return rows as AdminRewardRow[]
 }
+
+// ─────────────────────────────────────────────────────────────
+// /admin/dashboard 통계 — 누적 수치 + 전월 대비 변화율
+// ─────────────────────────────────────────────────────────────
+
+export type DashboardStats = {
+  totals: {
+    users: number              // 전체 누적 회원수
+    activeSubscriptions: number // 현재 active 구독 수
+    rewardAmount: number       // 전체 누적 보상 지급액
+    thisMonthRevenue: number   // 이번 달 결제 합계 (KST, billing_year/month 기준)
+  }
+  // 전월 동기 대비 % 변화율. 전월 값이 0이면 null (분모 0 회피)
+  changes: {
+    users: number | null
+    activeSubscriptions: number | null
+    rewardAmount: number | null
+    revenue: number | null
+  }
+}
+
+// MySQL 서버가 UTC라고 가정. KST 기준 월 시작/끝을 UTC datetime string으로 변환.
+// users.created_at, subscriptions.started_at 같은 DATETIME 컬럼 비교용.
+function kstMonthRangeAsUtcString(year: number, month: number) {
+  const startMs = Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000
+  const endMs = Date.UTC(year, month, 1) - 9 * 60 * 60 * 1000
+  const fmt = (ms: number) =>
+    new Date(ms).toISOString().slice(0, 19).replace('T', ' ')
+  return { start: fmt(startMs), end: fmt(endMs) }
+}
+
+function previousMonth(year: number, month: number) {
+  if (month === 1) return { year: year - 1, month: 12 }
+  return { year, month: month - 1 }
+}
+
+// 전월 대비 % (소수점 1자리). 전월 0이면 null
+function pctChange(now: number, prev: number): number | null {
+  if (prev === 0) return null
+  return Math.round(((now - prev) / prev) * 1000) / 10
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  // KST 기준 현재 연/월
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
+  const thisYear = kstNow.getUTCFullYear()
+  const thisMonth = kstNow.getUTCMonth() + 1
+  const prev = previousMonth(thisYear, thisMonth)
+
+  const thisRange = kstMonthRangeAsUtcString(thisYear, thisMonth)
+  const prevRange = kstMonthRangeAsUtcString(prev.year, prev.month)
+
+  // 누적/현재 4종 + 변화 측정용 8종 = 총 12 쿼리. Promise.all로 병렬 처리
+  const [
+    usersTotal,
+    activeSubsTotal,
+    rewardTotal,
+    thisRevenue,
+    prevRevenue,
+    thisUsers,
+    prevUsers,
+    thisSubs,
+    prevSubs,
+    thisReward,
+    prevReward,
+  ] = await Promise.all([
+    pool.query<RowDataPacket[]>('SELECT COUNT(*) AS c FROM users'),
+    pool.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS c FROM subscriptions WHERE status='active'",
+    ),
+    pool.query<RowDataPacket[]>(
+      'SELECT COALESCE(SUM(amount), 0) AS c FROM reward_logs',
+    ),
+    pool.query<RowDataPacket[]>(
+      "SELECT COALESCE(SUM(amount), 0) AS c FROM payments WHERE status='success' AND billing_year=? AND billing_month=?",
+      [thisYear, thisMonth],
+    ),
+    pool.query<RowDataPacket[]>(
+      "SELECT COALESCE(SUM(amount), 0) AS c FROM payments WHERE status='success' AND billing_year=? AND billing_month=?",
+      [prev.year, prev.month],
+    ),
+    // 신규 가입 (이번 달 vs 전월)
+    pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) AS c FROM users WHERE created_at >= ? AND created_at < ?',
+      [thisRange.start, thisRange.end],
+    ),
+    pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) AS c FROM users WHERE created_at >= ? AND created_at < ?',
+      [prevRange.start, prevRange.end],
+    ),
+    // 신규 active 구독 (이번 달 vs 전월)
+    pool.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS c FROM subscriptions WHERE status='active' AND started_at >= ? AND started_at < ?",
+      [thisRange.start, thisRange.end],
+    ),
+    pool.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS c FROM subscriptions WHERE status='active' AND started_at >= ? AND started_at < ?",
+      [prevRange.start, prevRange.end],
+    ),
+    // 보상 지급 (이번 달 vs 전월)
+    pool.query<RowDataPacket[]>(
+      'SELECT COALESCE(SUM(amount), 0) AS c FROM reward_logs WHERE reward_year=? AND reward_month=?',
+      [thisYear, thisMonth],
+    ),
+    pool.query<RowDataPacket[]>(
+      'SELECT COALESCE(SUM(amount), 0) AS c FROM reward_logs WHERE reward_year=? AND reward_month=?',
+      [prev.year, prev.month],
+    ),
+  ])
+
+  // pool.query 반환은 [rows, fields] 튜플 — rows[0]가 첫 행
+  const n = (r: [RowDataPacket[], unknown]) => Number(r[0][0].c)
+
+  return {
+    totals: {
+      users: n(usersTotal),
+      activeSubscriptions: n(activeSubsTotal),
+      rewardAmount: n(rewardTotal),
+      thisMonthRevenue: n(thisRevenue),
+    },
+    changes: {
+      users: pctChange(n(thisUsers), n(prevUsers)),
+      activeSubscriptions: pctChange(n(thisSubs), n(prevSubs)),
+      rewardAmount: pctChange(n(thisReward), n(prevReward)),
+      revenue: pctChange(n(thisRevenue), n(prevRevenue)),
+    },
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 최근 활동 — 4개 테이블 UNION ALL로 시간순 5건
+// ─────────────────────────────────────────────────────────────
+
+export type RecentActivity = {
+  type: 'signup' | 'payment' | 'reward' | 'trigger'
+  email: string | null
+  name: string | null
+  amount: number | null
+  trigger_type: string | null
+  at: Date
+}
+
+export async function getRecentActivity(limit: number = 5): Promise<RecentActivity[]> {
+  // 4개 이벤트 소스를 UNION ALL로 합쳐 시간순 정렬 후 LIMIT
+  // 컬럼 수/타입이 맞아야 union 가능 → 빈 컬럼은 NULL로 채움
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `(
+       SELECT 'signup' AS type, u.email, u.name,
+              NULL AS amount, NULL AS trigger_type, u.created_at AS at
+       FROM users u
+     )
+     UNION ALL
+     (
+       SELECT 'payment' AS type, u.email, u.name,
+              p.amount, NULL AS trigger_type, p.paid_at AS at
+       FROM payments p JOIN users u ON u.id = p.user_id
+       WHERE p.status = 'success'
+     )
+     UNION ALL
+     (
+       SELECT 'reward' AS type, u.email, u.name,
+              r.amount, NULL AS trigger_type, r.rewarded_at AS at
+       FROM reward_logs r JOIN users u ON u.id = r.user_id
+     )
+     UNION ALL
+     (
+       SELECT 'trigger' AS type, NULL AS email, NULL AS name,
+              NULL AS amount, t.trigger_type, t.triggered_at AS at
+       FROM trigger_logs t
+     )
+     ORDER BY at DESC
+     LIMIT ?`,
+    [limit],
+  )
+  return rows as RecentActivity[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// 구독 분포 — active 구독 기준 티어별 카운트
+// ─────────────────────────────────────────────────────────────
+
+export type SubscriptionDistribution = {
+  tier: 'basic' | 'standard' | 'premium'
+  count: number
+}
+
+export async function getSubscriptionDistribution(): Promise<SubscriptionDistribution[]> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT tier, COUNT(*) AS count
+     FROM subscriptions
+     WHERE status='active'
+     GROUP BY tier`,
+  )
+  return rows.map((r) => ({ tier: r.tier, count: Number(r.count) }))
+}
