@@ -44,26 +44,43 @@ export function Hero() {
       <div className="absolute inset-0 bg-black/30" aria-hidden />
 
       {/* 텍스트 레이어 */}
-      <div className="relative z-10 flex min-h-[600px] flex-col justify-between p-6 text-white md:min-h-[80svh] md:p-12">
-        <h1 className="text-3xl font-medium md:text-5xl">비가 오는 날엔</h1>
+      <div className="relative z-10 flex min-h-[600px] flex-col p-6 text-white md:min-h-[80svh] md:p-12">
+        <h1 className="text-3xl font-extrabold md:text-5xl">비가 오는 날엔</h1>
 
-        <div className="flex items-end justify-between gap-4">
-          {/* TODO(yeojin): 상품 상세 페이지 라우트 확정 */}
-          <Link
-            href="#"
-            className="text-sm underline-offset-4 hover:underline md:text-base"
-          >
-            △ 상품 상세설명
-          </Link>
+        {/* 하단 영역: 우하단 워드마크/링크 + 하단 중앙 상품 상세설명 */}
+        <div className="mt-auto">
+          <div className="flex justify-end">
+            <div className="text-right">
+              <p className="text-3xl font-extrabold md:text-5xl">Parami</p>
+              <div className="mt-1 flex justify-end gap-2 text-xs text-white/80 md:text-sm">
+                <Link
+                  href="/login"
+                  className="underline-offset-4 hover:text-white hover:underline"
+                >
+                  로그인
+                </Link>
+                <span className="text-white/50" aria-hidden>
+                  ·
+                </span>
+                <Link
+                  href="/home"
+                  className="underline-offset-4 hover:text-white hover:underline"
+                >
+                  메인페이지로 ↗
+                </Link>
+              </div>
+            </div>
+          </div>
 
-          <div className="text-right">
-            <p className="text-3xl font-semibold md:text-5xl">Parami</p>
-            <Link
-              href="/login"
-              className="mt-1 inline-block text-xs underline-offset-4 hover:underline md:text-sm"
+          {/* 하단 중앙 — 상품 상세설명 (§2 ImageGrid 앵커) */}
+          {/* native <a>로 사용 — Next.js <Link>의 hash-only navigation 불안정 우회 */}
+          <div className="mt-6 text-center md:mt-10">
+            <a
+              href="#image-grid"
+              className="text-base font-medium underline-offset-4 hover:underline md:text-lg"
             >
-              로그인 / 메인페이지로 ↗
-            </Link>
+              △ 상품 상세설명
+            </a>
           </div>
         </div>
       </div>

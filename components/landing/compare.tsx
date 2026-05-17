@@ -1,19 +1,13 @@
-// 랜딩 §5 — 왜 Parami? 비교 섹션
-// - 헤더 + 4가지 포인트 리스트(번호 매김) + 좌(기존 보험) vs 우(Parami) 비교 카드
-// - 데스크탑: 카드 가로 2열 + 가운데 ChevronLeft
-// - 모바일: 카드 세로 스택 + 분리자는 ChevronDown으로 토글 (위→아래 흐름 의미)
-// - X 마크: text-destructive (빨강) / ✓ 마크: text-trigger-good (초록)
-// - 우측 카드만 border-2 border-primary 강조
-// - FadeUp 스크롤 진입 모션
-// - import: app/page.tsx
-//
-// TODO(yeojin, phase-10): 카드 내부 리스트 좌우 패딩 비대칭 잔존.
-//   - 시도한 것: flex justify-center + w-fit → mx-auto w-fit (.next 캐시 삭제 후에도 동일)
-//   - 추가 시도 필요: (a) ul 폭을 명시적으로 잡기 (b) li flex justify-center로 li 자체 가운데
-//   - 카드 헤더 크기도 작아 보임 (text-xl md:text-2xl 검토)
-//   - 카드 수직 중앙 정렬도 미해결 (CardContent flex-1 items-center 패턴 검토)
+// Compare — 왜 Parami? 비교 섹션 (§5)
+//   - 4가지 포인트 리스트 + 좌우 비교 카드 (우측 강조)
+//   - 좌측 (기존 보험): 톤다운 (bg-muted/30, border-border/30, shadow-sm)
+//   - 우측 (Parami): 영웅화 (border-2 border-primary, shadow-xl, md:scale-[1.03])
+//   - 가운데 ArrowRight(데스크탑) / ArrowDown(모바일) — 좌→우 전환 명확
+//   - 카드 폭 md:w-[340px] 고정 (정사각에 가까운 비율)
+//   - 항목 li 자체를 박스화 (좌: bg-background/50, 우: bg-primary/5) + 좌측 정렬
+//   - 사용처: app/page.tsx
 
-import { Check, ChevronDown, ChevronLeft, X } from 'lucide-react'
+import { ArrowDown, ArrowRight, Check, X } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -46,7 +40,8 @@ const COMPARE = {
 
 export function Compare() {
   return (
-    <FadeUp className="px-6 py-16 md:px-12 md:py-24">
+    <div id="compare">
+      <FadeUp className="px-6 py-16 md:px-12 md:py-24">
       <div className="mx-auto max-w-5xl">
         <h2 className="text-2xl font-bold text-foreground md:text-4xl">
           왜 Parami 인가요?
@@ -63,58 +58,60 @@ export function Compare() {
           ))}
         </ol>
 
-        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-stretch gap-6 md:mt-14 md:flex-row md:gap-12">
-          {/* 좌측: 기존 보험 (회색 톤다운) */}
-          <Card className="flex-1 bg-muted">
-            <CardHeader>
-              <CardTitle className="text-lg text-muted-foreground md:text-xl">
+        <div className="mx-auto mt-10 flex max-w-4xl flex-col items-stretch gap-6 md:mt-14 md:flex-row md:items-center md:justify-center md:gap-8">
+          {/* 좌측 카드 — 기존 보험 (톤다운) */}
+          <Card className="w-full border-border/30 bg-muted/30 shadow-sm md:w-[340px]">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-muted-foreground md:text-2xl">
                 기존 보험
               </CardTitle>
             </CardHeader>
-            <CardContent className="py-10">
-              <ul className="mx-auto w-fit space-y-4">
+            <CardContent className="px-6 pb-6">
+              <ul className="space-y-3">
                 {COMPARE.traditional.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
+                  <li
+                    key={item}
+                    className="flex items-center gap-3 rounded-md bg-background/50 px-4 py-3 text-sm text-muted-foreground md:text-base"
+                  >
                     <X
-                      className="mt-0.5 h-5 w-5 shrink-0 text-destructive"
+                      className="h-4 w-4 shrink-0 text-destructive"
                       aria-hidden
                     />
-                    <span className="text-sm text-foreground md:text-base">
-                      {item}
-                    </span>
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </CardContent>
           </Card>
 
-          {/* 가운데 분리자 — 데스크탑 < / 모바일 ∨ */}
+          {/* 가운데 화살표 — 좌→우 전환 (모바일은 위→아래) */}
           <div
-            className="flex items-center justify-center text-muted-foreground"
+            className="flex shrink-0 items-center justify-center text-muted-foreground"
             aria-hidden
           >
-            <ChevronLeft className="hidden h-12 w-12 md:block" />
-            <ChevronDown className="h-12 w-12 md:hidden" />
+            <ArrowRight className="hidden h-6 w-6 md:block" />
+            <ArrowDown className="h-6 w-6 md:hidden" />
           </div>
 
-          {/* 우측: Parami (파란 테두리 강조) */}
-          <Card className="flex-1 border-2 border-primary">
-            <CardHeader>
-              <CardTitle className="text-lg text-primary md:text-xl">
+          {/* 우측 카드 — Parami (영웅화) */}
+          <Card className="w-full border-2 border-primary bg-background shadow-xl md:w-[340px] md:scale-[1.03]">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-2xl font-bold text-primary md:text-3xl">
                 Parami
               </CardTitle>
             </CardHeader>
-            <CardContent className="py-10">
-              <ul className="mx-auto w-fit space-y-4">
+            <CardContent className="px-6 pb-6">
+              <ul className="space-y-3">
                 {COMPARE.parami.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
+                  <li
+                    key={item}
+                    className="flex items-center gap-3 rounded-md bg-primary/5 px-4 py-3 text-sm font-medium text-foreground md:text-base"
+                  >
                     <Check
-                      className="mt-0.5 h-5 w-5 shrink-0 text-trigger-good"
+                      className="h-4 w-4 shrink-0 text-trigger-good"
                       aria-hidden
                     />
-                    <span className="text-sm text-foreground md:text-base">
-                      {item}
-                    </span>
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
@@ -123,5 +120,6 @@ export function Compare() {
         </div>
       </div>
     </FadeUp>
+    </div>
   )
 }

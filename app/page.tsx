@@ -24,6 +24,7 @@ import { Compare } from '@/components/landing/compare'
 import { TriggerCards } from '@/components/landing/trigger-cards'
 import { GoodWeather } from '@/components/landing/good-weather'
 import { CtaDecide } from '@/components/landing/cta-decide'
+import { PricingSection } from '@/components/pricing-section'
 
 export default function LandingPage() {
   return (
@@ -36,12 +37,10 @@ export default function LandingPage() {
       <TriggerCards />
       <GoodWeather />
 
-      {/* §8 요금제 — TODO(yeojin): components/pricing-section.tsx 머지되면 import로 교체 (담당: 소라/백2) */}
-      {/* id="pricing" 필수 — Phase 4 CTA "요금제 바로가기" 앵커 타겟 */}
-      <section id="pricing" className="px-6 py-16 md:px-12 md:py-24">
-        <div className="mx-auto max-w-5xl rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          요금제 섹션 (소라 PR 머지 후 연결)
-        </div>
+      {/* §8 요금제 — components/pricing-section.tsx (소라 작업, main에 머지됨) */}
+      {/* wrapper #pricing은 백업 앵커 (현재 §4 CTA는 /pricing 페이지로 이동) */}
+      <section id="pricing">
+        <PricingSection />
       </section>
 
       <CtaDecide />

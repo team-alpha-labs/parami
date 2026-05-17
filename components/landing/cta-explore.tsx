@@ -23,15 +23,15 @@ export function CtaExplore() {
         </p>
 
         <div className="mt-8 flex flex-col items-stretch justify-center gap-3 md:mt-12 md:flex-row md:items-center">
-          {/* 강조 버튼 — 상품 상세설명 (파란 채움) */}
-          {/* TODO(yeojin): 상품 상세 페이지 라우트 확정 */}
+          {/* 강조 버튼 — 상품 상세설명 (§5 Compare 앵커, 다음 섹션으로 안내) */}
+          {/* native <a>로 — Next.js <Link>의 hash-only navigation 불안정 우회 */}
           <Button asChild size="lg">
-            <Link href="#">상품 상세설명 ↗</Link>
+            <a href="#compare">상품 상세설명 ↗</a>
           </Button>
 
-          {/* 아웃라인 버튼 — 요금제 (Phase 8 #pricing 앵커) */}
+          {/* 아웃라인 버튼 — 요금제 (/pricing 페이지) */}
           <Button asChild size="lg" variant="outline">
-            <Link href="#pricing">요금제 바로가기</Link>
+            <Link href="/pricing">요금제 바로가기</Link>
           </Button>
         </div>
       </div>

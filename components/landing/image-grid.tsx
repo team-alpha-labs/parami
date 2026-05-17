@@ -32,7 +32,7 @@ function Photo({
   return (
     <figure>
       <div
-        className={`relative w-full overflow-hidden rounded-lg bg-muted ${boxClassName}`}
+        className={`relative w-full overflow-hidden bg-muted ${boxClassName}`}
       >
         <Image
           src={src}
@@ -43,7 +43,7 @@ function Photo({
         />
       </div>
       <figcaption className="mt-4">
-        <p className="text-base font-semibold text-foreground md:text-lg">
+        <p className="text-lg font-semibold text-foreground md:text-xl">
           {caption}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
@@ -55,7 +55,7 @@ function Photo({
 function Message() {
   return (
     <div className="flex items-center">
-      <h2 className="text-2xl font-bold leading-snug text-foreground md:text-4xl">
+      <h2 className="text-3xl font-bold leading-tight text-foreground md:text-5xl">
         날씨에 맞추어
         <br />
         보상금과 혜택이 쏟아져요
@@ -66,38 +66,41 @@ function Message() {
 
 export function ImageGrid() {
   return (
-    <FadeUp className="px-6 py-16 md:px-12 md:py-24">
-      <div className="mx-auto max-w-5xl">
-        <div className="grid gap-8 md:grid-cols-2 md:gap-x-10 md:gap-y-12">
+    <div id="image-grid">
+      <FadeUp className="px-6 py-16 md:px-12 md:py-24">
+        <div className="mx-auto max-w-4xl">
+          <div className="grid gap-8 md:grid-cols-2 md:gap-x-10 md:gap-y-12">
           <Photo
-            src="/images/landing/weather-snow.jpg"
+            src="/images/landing/weather-snow.png"
             caption="눈오는 날"
             sub="기상청 공식 관측 기준"
+            boxClassName="aspect-[3/4]"
           />
           <Photo
-            src="/images/landing/weather-sunny.jpg"
+            src="/images/landing/weather-sunny.png"
             caption="맑은 날"
             sub="봄, 가을 미세먼지 좋음, 강수 1mm 이하"
           />
           <Message />
           <Photo
-            src="/images/landing/weather-rain.jpg"
+            src="/images/landing/weather-rain.png"
             caption="비오는 날"
             sub="일 강수량 3mm 이상"
-            boxClassName="aspect-square md:aspect-[3/4]"
           />
           <Photo
-            src="/images/landing/weather-cold.jpg"
+            src="/images/landing/weather-cold.png"
             caption="한파"
             sub="최저기온 -12℃ 이하"
           />
           <Photo
-            src="/images/landing/weather-heat.jpg"
+            src="/images/landing/weather-heat.png"
             caption="폭염"
             sub="최고기온 33℃ 이상"
+            boxClassName="aspect-[5/6]"
           />
+          </div>
         </div>
-      </div>
-    </FadeUp>
+      </FadeUp>
+    </div>
   )
 }

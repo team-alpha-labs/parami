@@ -10,21 +10,21 @@ import { FadeUp } from '@/components/motion/fade-up'
 
 export function CtaDecide() {
   return (
-    <FadeUp className="px-6 py-16 md:px-12 md:py-24">
+    <FadeUp className="px-6 py-12 md:px-12 md:py-20">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
           보상받을 준비가 되셨나요?
         </h2>
-        <p className="mt-4 text-base text-muted-foreground md:mt-6 md:text-lg">
+        <p className="mt-3 text-base text-muted-foreground md:mt-4 md:text-lg">
           이메일 주소를 입력하고 시작하세요! 월 7,400원부터 시작해요
         </p>
 
-        <div className="mt-8 flex justify-center md:mt-12">
+        <div className="mt-6 flex justify-center md:mt-8">
           <Button
             asChild
             size="lg"
             variant="outline"
-            className="rounded-full border-2 border-primary text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            className="rounded-[13px] border-2 border-primary text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             <Link href="/signup">시작하기</Link>
           </Button>

@@ -1,10 +1,9 @@
 // TriggerCards — 보상 트리거 조건 5종 카드 섹션 (§6)
-//   - 데이터 출처: lib/conditions.ts의 TRIGGER_CONDITIONS (snow 제외 — 눈은 PTY 노출 X)
-//   - 색 매핑: COLOR_MAP (Tailwind v4 JIT 안전성 위해 명시적 매핑, 동적 클래스 금지)
-//   - 카드 내부: text-left, 그리드 컨테이너만 mx-auto로 화면 중앙
-//   - ⚠️ 시안과 다름 (Phase 10에서 디자이너 공유 예정):
-//       시안은 데스크탑 5열 그리드인데, 정보 밀도 강조 위해
-//       모바일/데스크탑 모두 가로 스크롤 + 카드 폭 360px로 통일.
+//   - 데이터 출처: lib/conditions.ts의 TRIGGER_CONDITIONS (snow 제외)
+//   - 색 매핑: COLOR_MAP — 아이콘 박스에만 사용 (강조 라벨 칩은 회색 통일)
+//   - 카드 내부 구조: 아이콘 → 제목/조건 → 구분선 → 평균/숫자 → 칩 → 설명
+//   - 카드 내부 좌측 정렬, 그리드 컨테이너 mx-auto로 중앙
+//   - 데스크탑도 가로 스크롤 (디자이너 판단, 시안 의도 반영)
 //   - 사용처: app/page.tsx
 
 import { CloudRain, CloudSnow, Sun, Thermometer, Wind } from 'lucide-react'
@@ -81,7 +80,7 @@ const TRIGGERS = [
 export function TriggerCards() {
   return (
     <FadeUp className="pt-16 pb-10 md:pt-24 md:pb-14">
-      <div className="mx-auto max-w-7xl px-6 md:px-12">
+      <div className="mx-auto max-w-5xl px-6 md:px-12">
         <p className="text-sm font-medium text-primary md:text-base">
           보상 조건
         </p>
@@ -94,7 +93,7 @@ export function TriggerCards() {
       </div>
 
       <div
-        className="mx-auto mt-10 flex max-w-7xl snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4
+        className="mx-auto mt-10 flex max-w-5xl snap-x snap-mandatory gap-4 overflow-x-auto custom-scrollbar px-6 pb-4
                    md:mt-14 md:gap-6 md:px-12"
       >
         {TRIGGERS.map(
@@ -112,33 +111,43 @@ export function TriggerCards() {
             return (
               <Card
                 key={key}
-                className="w-[320px] shrink-0 snap-start border-border/50 p-6 shadow-md"
+                className="w-[280px] shrink-0 snap-start border-border/50 p-6 shadow-md"
               >
+                {/* 1. 아이콘 박스 */}
                 <div
-                  className={`mb-4 inline-flex rounded-lg p-3 ${color.bg}`}
+                  className={`mb-3 inline-flex rounded-lg p-3 ${color.bg}`}
                 >
                   <Icon className={`h-6 w-6 ${color.text}`} aria-hidden />
                 </div>
+
+                {/* 2. 제목 + 조건 */}
                 <h3 className="text-lg font-bold text-foreground">{title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {threshold}
                 </p>
-                <div className="mt-2 flex items-baseline justify-between gap-2">
+
+                {/* 3. 구분선 */}
+                <div className="my-4 border-t border-border" />
+
+                {/* 4. 평균 정보 + 큰 숫자 */}
+                <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm text-muted-foreground">
                     서울 월 평균
                   </span>
-                  <span className="text-2xl font-bold text-foreground">
+                  <span className="text-3xl font-bold text-foreground md:text-4xl">
                     {monthlyDays}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{monthlyDetail}</p>
+
+                {/* 5. 강조 라벨 칩 — 회색 통일 (카드별 컬러 X) */}
                 <div className="mt-4">
-                  <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${color.bg} ${color.text}`}
-                  >
+                  <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                     {highlight}
                   </span>
                 </div>
+
+                {/* 6. 설명문 */}
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   {description}
                 </p>
