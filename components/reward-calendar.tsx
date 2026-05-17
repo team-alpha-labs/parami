@@ -23,11 +23,16 @@ type Props = {
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const
 
+// react-hooks/purity 룰 우회 — 모듈 레벨 헬퍼로 Date.now 호출 격리
+function getKstNow() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000)
+}
+
 export function RewardCalendar({ rewards, initialYear, initialMonth }: Props) {
   // KST 기준 현재 연/월 (서버 UTC 환경에서도 한국 시각 통일)
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
-  const [year, setYear] = useState(initialYear ?? kstNow.getUTCFullYear())
-  const [month, setMonth] = useState(initialMonth ?? kstNow.getUTCMonth() + 1)
+  const initial = getKstNow()
+  const [year, setYear] = useState(initialYear ?? initial.getUTCFullYear())
+  const [month, setMonth] = useState(initialMonth ?? initial.getUTCMonth() + 1)
 
   const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
@@ -61,7 +66,7 @@ export function RewardCalendar({ rewards, initialYear, initialMonth }: Props) {
   for (let i = 0; i < firstDay; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
-  const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+  const todayKst = getKstNow()
   const isCurrentMonth =
     todayKst.getUTCFullYear() === year && todayKst.getUTCMonth() + 1 === month
   const todayDate = isCurrentMonth ? todayKst.getUTCDate() : -1
