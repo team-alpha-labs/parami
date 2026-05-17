@@ -56,5 +56,6 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // matcher 제외 대상: API + Next.js 내부 자산 + public 정적 자산 폴더(videos, images) + favicon
+  matcher: ['/((?!api|_next/static|_next/image|videos|images|favicon.ico).*)'],
 }
