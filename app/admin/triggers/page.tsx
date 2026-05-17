@@ -111,7 +111,7 @@ export default function AdminTriggersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
-                      {new Date(trigger.triggered_at).toLocaleDateString('ko-KR')}
+                      {new Date(trigger.triggered_at).toLocaleString('ko-KR')}
                     </td>
                     <td className="px-6 py-4 font-medium">
                       {getMeasuredValue(trigger)}
