@@ -110,8 +110,10 @@ export default function SignupPage() {
       await api.post('/api/auth/signup', { name, email, password })
       // 자동 로그인 — 사용자가 가입 후 로그인 다시 안 하도록
       await api.post('/api/auth/login', { email, password })
+      // useMe 무효화 + RSC Header 갱신 (logout-button과 동일 패턴)
       await queryClient.invalidateQueries({ queryKey: ['me'] })
       router.push('/home')
+      router.refresh()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '회원가입에 실패했어요.')
       setSubmitting(false)

@@ -44,11 +44,18 @@ function LoginInner() {
     setError(null)
     try {
       await api.post('/api/auth/login', { email, password })
-      // useMe 캐시 무효화 → 헤더가 즉시 로그인 상태로 갱신
+      // useMe 캐시 무효화 (클라이언트 컴포넌트) +
+      // router.refresh() (서버 컴포넌트 Header는 쿠키를 직접 읽으므로 RSC 재실행 필요)
       await queryClient.invalidateQueries({ queryKey: ['me'] })
-      // proxy.ts가 next 파라미터 안 쓰니 직접 처리
-      const next = searchParams.get('next') ?? '/home'
+
+      // next 파라미터 open redirect 방지:
+      //   - 내부 경로(/로 시작)만 허용
+      //   - //로 시작하는 protocol-relative URL 차단 (//evil.com → 외부 호스트로 이동)
+      const rawNext = searchParams.get('next')
+      const next =
+        rawNext?.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/home'
       router.push(next)
+      router.refresh()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '로그인에 실패했어요.')
       setSubmitting(false)
