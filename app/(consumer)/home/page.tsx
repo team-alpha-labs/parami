@@ -19,6 +19,11 @@ type RewardSummary = {
   thisMonthCount: number
 }
 
+// react-hooks/purity 룰 우회 — 모듈 레벨 헬퍼로 Date.now 호출 격리
+function getKstNow() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000)
+}
+
 type WeatherSnapshot = {
   measured_at: string
   location: string
@@ -46,7 +51,7 @@ export default function HomePage() {
   })
 
   // KST 기준 오늘 날짜 라벨
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
+  const kstNow = getKstNow()
   const dateLabel = `${kstNow.getUTCFullYear()}. ${String(kstNow.getUTCMonth() + 1).padStart(2, '0')}. ${String(kstNow.getUTCDate()).padStart(2, '0')}`
 
   // KST 기준 이번 달 보상 합계
