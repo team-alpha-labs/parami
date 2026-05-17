@@ -149,6 +149,14 @@ export function PricingSection() {
                   >
                     <Link href="/signup">선택하기</Link>
                   </Button>
+                ) : !mySubscription ? (
+                  <Button
+                    asChild
+                    variant={isHighlighted ? 'default' : 'outline'}
+                    className="w-full"
+                  >
+                    <Link href={`/payment?tier=${plan.tier}`}>선택하기</Link>
+                  </Button>
                 ) : isCurrent ? (
                   <Button disabled variant="secondary" className="w-full">
                     현재 이용 중
