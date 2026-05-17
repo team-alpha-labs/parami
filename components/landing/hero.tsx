@@ -3,10 +3,6 @@
 // - LCP 우선 — framer-motion 미사용 (정적 서버 컴포넌트)
 // - prefers-reduced-motion: 영상 숨기고 포스터 이미지만 표시
 // - import: app/page.tsx
-//
-// TODO(yeojin): proxy.ts matcher가 /videos/*, /images/* 정적 자산을
-// 가로채서 dev에서 로그인 리다이렉트 발생. 팀 협의 후 별도 처리.
-// (랜딩 PR과 분리해 인프라 변경 별도 진행 예정)
 
 import Link from 'next/link'
 

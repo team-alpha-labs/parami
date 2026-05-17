@@ -6,10 +6,9 @@
 // - FadeUp으로 스크롤 진입 모션
 // - import: app/page.tsx
 //
-// 권장 사진 스펙 (여진이 준비 시 참고):
-//   정사각 4장 (눈/맑음/한파/폭염): 1200×1200, ≤200KB, JPEG
-//   세로형 1장 (비):                 900×1200 (3:4), ≤200KB, JPEG
-//   경로: public/images/landing/weather-{snow|sunny|rain|cold|heat}.jpg
+// 실제 자산 경로: public/images/landing/weather-{snow|sunny|rain|cold|heat}.png
+//   정사각 4장 (눈/맑음/한파/폭염) + 세로형 1장 (비, 3:4)
+//   TODO(후속): PNG → JPEG/WebP 변환으로 용량 절감 (현재 99~302KB)
 //   파일 없어도 빌드/런타임 안 깨짐 (404만 뜨고 회색 박스만 보임)
 
 import Image from 'next/image'

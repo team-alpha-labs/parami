@@ -6,6 +6,8 @@
 
 import { FadeUp } from '@/components/motion/fade-up'
 
+// 기획팀 합의 "연간 기대액(+α)" 마케팅 수치. lib/conditions.ts·plans와는 분리된 카피.
+// 요금제·보상금이 바뀌면 수동 동기화 필요 (drift 주의).
 const TIERS = [
   { name: 'Basic', amount: '90,700원' },
   { name: 'Standard', amount: '158,600원' },
