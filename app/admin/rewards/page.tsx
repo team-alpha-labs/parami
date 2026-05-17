@@ -7,12 +7,12 @@ import type { AdminRewardRow } from '@/lib/queries/admin'
 import { Search } from 'lucide-react'
 
 const TRIGGER_BADGE: Record<string, { label: string; className: string }> = {
-  rain: { label: '강수', className: 'bg-blue-100 text-blue-700' },
-  heat: { label: '폭염', className: 'bg-red-100 text-red-700' },
-  cold: { label: '한파', className: 'bg-cyan-100 text-cyan-700' },
-  snow: { label: '눈', className: 'bg-slate-100 text-slate-700' },
-  dust: { label: '미세먼지', className: 'bg-yellow-100 text-yellow-700' },
-  good_weather: { label: '맑은 날', className: 'bg-green-100 text-green-700' },
+  rain: { label: '강수', className: 'bg-primary/10 text-primary' },
+  heat: { label: '폭염', className: 'bg-destructive/10 text-destructive' },
+  cold: { label: '한파', className: 'bg-primary/10 text-primary' },
+  snow: { label: '눈', className: 'bg-muted text-muted-foreground' },
+  dust: { label: '미세먼지', className: 'bg-warning/10 text-warning' },
+  good_weather: { label: '맑은 날', className: 'bg-success/10 text-success' },
 }
 
 export default function AdminRewardsPage() {
@@ -119,7 +119,7 @@ export default function AdminRewardsPage() {
                       +{reward.amount.toLocaleString()}원
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
-                      {new Date(reward.rewarded_at).toLocaleDateString('ko-KR')}
+                      {new Date(reward.rewarded_at).toLocaleString('ko-KR')}
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
