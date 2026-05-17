@@ -3,12 +3,14 @@
 // /mypage — 본인 보상/결제/구독 요약
 // 디자인의 "이번 달 트리거 현황 5종" 섹션은 trigger_type별 집계 API 필요 — 후속 PR
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/client'
 import { useMe } from '@/hooks/use-me'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { WithdrawModal } from '@/components/withdraw-modal'
 import type { SubscriptionRow } from '@/types/db'
 
 type RewardSummary = {
@@ -42,6 +44,7 @@ function formatDate(d: string | Date | null | undefined) {
 
 export default function MyPage() {
   const { data: me } = useMe()
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
 
   const { data: summary } = useQuery<RewardSummary>({
     queryKey: ['rewards', 'summary'],
@@ -138,6 +141,19 @@ export default function MyPage() {
           )}
         </div>
       </div>
+
+      {/* 회원 탈퇴 — 가입 해지(구독 해지)와 별개. 페이지 하단에 위험 액션으로 분리 */}
+      <div className="mt-12 border-t pt-6 text-center">
+        <button
+          type="button"
+          onClick={() => setWithdrawOpen(true)}
+          className="text-xs text-muted-foreground hover:text-destructive hover:underline"
+        >
+          회원 탈퇴
+        </button>
+      </div>
+
+      <WithdrawModal open={withdrawOpen} onOpenChange={setWithdrawOpen} />
     </div>
   )
 }
