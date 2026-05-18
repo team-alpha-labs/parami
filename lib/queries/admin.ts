@@ -11,13 +11,27 @@ export type AdminUserRow = {
   role: 'user' | 'admin'
   balance: number
   created_at: Date
+  // 가장 최근 구독 스냅샷 — 구독 이력이 없는 유저는 셋 다 NULL
+  tier: 'basic' | 'standard' | 'premium' | null
+  status: 'active' | 'cancelled' | 'expired' | null
+  cancelled_at: Date | null
 }
 
+// 한 유저가 cancelled 후 재가입한 경우를 위해 가장 최근 구독을 LEFT JOIN으로 붙임
+// (1인 1 active 보장이지만 cancelled/expired 이력은 여러 개 가능)
+// correlated subquery는 admin 트래픽 규모에선 충분 — 별도 인덱스 추가 불필요
 export async function listAllUsers(): Promise<AdminUserRow[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, email, name, role, balance, created_at
-     FROM users
-     ORDER BY created_at DESC, id DESC`,
+    `SELECT u.id, u.email, u.name, u.role, u.balance, u.created_at,
+            s.tier, s.status, s.cancelled_at
+     FROM users u
+     LEFT JOIN subscriptions s ON s.id = (
+       SELECT id FROM subscriptions
+       WHERE user_id = u.id
+       ORDER BY started_at DESC, id DESC
+       LIMIT 1
+     )
+     ORDER BY u.created_at DESC, u.id DESC`,
   )
   return rows as AdminUserRow[]
 }
@@ -84,18 +98,37 @@ export type AdminTriggerRow = {
   temp_c: number | null
   wind_ms: number | null
   pm25: number | null
+  // 이 트리거로 보상 받은 유저 수 / 총 지급액 — reward_logs 집계
+  // (trigger_logs UNIQUE(trigger_type, triggered_date) 보장이라 한 trigger_log_id당 N건의 reward_logs)
+  affected_users: number
+  total_reward_amount: number
 }
 
-// 트리거 발동 내역 — 최신순, 발동 근거(날씨 스냅샷) 함께 JOIN
+// 트리거 발동 내역 — 최신순, 발동 근거(날씨 스냅샷) + 보상 집계 JOIN
+// reward_logs는 LEFT JOIN(서브쿼리) — 트리거는 떴지만 아직 보상 지급 전이거나
+// 아무도 active 구독 아닌 케이스에서 0건이 자연스럽게 나옴
 export async function listAllTriggers(): Promise<AdminTriggerRow[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT t.id, t.weather_log_id, t.trigger_type, t.triggered_at, t.triggered_date,
-            w.rain_mm, w.temp_c, w.wind_ms, w.pm25
+            w.rain_mm, w.temp_c, w.wind_ms, w.pm25,
+            COALESCE(r.affected_users, 0) AS affected_users,
+            COALESCE(r.total_reward_amount, 0) AS total_reward_amount
      FROM trigger_logs t
      JOIN weather_logs w ON w.id = t.weather_log_id
+     LEFT JOIN (
+       SELECT trigger_log_id,
+              COUNT(DISTINCT user_id) AS affected_users,
+              SUM(amount) AS total_reward_amount
+       FROM reward_logs
+       GROUP BY trigger_log_id
+     ) r ON r.trigger_log_id = t.id
      ORDER BY t.triggered_at DESC, t.id DESC`,
   )
-  return rows as AdminTriggerRow[]
+  return rows.map((r) => ({
+    ...r,
+    affected_users: Number(r.affected_users),
+    total_reward_amount: Number(r.total_reward_amount),
+  })) as AdminTriggerRow[]
 }
 
 export type AdminRewardRow = {
