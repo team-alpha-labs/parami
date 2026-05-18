@@ -153,7 +153,11 @@ export default function MyPage() {
         </button>
       </div>
 
-      <WithdrawModal open={withdrawOpen} onOpenChange={setWithdrawOpen} />
+      <WithdrawModal
+        open={withdrawOpen}
+        onOpenChange={setWithdrawOpen}
+        hasActiveSubscription={subscription?.status === 'active'}
+      />
     </div>
   )
 }
