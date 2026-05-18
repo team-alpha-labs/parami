@@ -3,8 +3,22 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/client'
-import type { AdminTriggerRow } from '@/lib/queries/admin'
 import { Search } from 'lucide-react'
+
+// 우석이 추가한 필드 포함한 타입
+type AdminTriggerRow = {
+  id: number
+  weather_log_id: number
+  trigger_type: 'rain' | 'heat' | 'cold' | 'snow' | 'dust' | 'good_weather'
+  triggered_at: Date
+  triggered_date: string
+  rain_mm: number | null
+  temp_c: number | null
+  wind_ms: number | null
+  pm25: number | null
+  affected_users: number | null
+  total_reward_amount: number | null
+}
 
 const TRIGGER_LABEL: Record<string, { emoji: string; name: string }> = {
   rain: { emoji: '🌧️', name: '강수' },
@@ -41,6 +55,8 @@ export default function AdminTriggersPage() {
   })
 
   const totalCount = triggers.length
+  const totalAffectedUsers = triggers.reduce((sum, t) => sum + (t.affected_users ?? 0), 0)
+  const totalRewardAmount = triggers.reduce((sum, t) => sum + (t.total_reward_amount ?? 0), 0)
 
   return (
     <div>
@@ -60,11 +76,17 @@ export default function AdminTriggersPage() {
         </div>
         <div className="bg-background rounded-xl border px-6 py-5">
           <p className="text-sm text-muted-foreground mb-1">영향받은 유저</p>
-          <p className="text-3xl font-bold text-muted-foreground">—</p>
+          <p className="text-3xl font-bold">
+            {totalAffectedUsers.toLocaleString()}
+            <span className="text-base font-normal text-muted-foreground ml-1">명</span>
+          </p>
         </div>
         <div className="bg-background rounded-xl border px-6 py-5">
           <p className="text-sm text-muted-foreground mb-1">총 보상 지급액</p>
-          <p className="text-3xl font-bold text-muted-foreground">—</p>
+          <p className="text-3xl font-bold">
+            {totalRewardAmount.toLocaleString()}
+            <span className="text-base font-normal text-muted-foreground ml-1">원</span>
+          </p>
         </div>
       </div>
 
@@ -96,6 +118,8 @@ export default function AdminTriggersPage() {
                 <th className="text-left px-6 py-3 font-medium">트리거 유형</th>
                 <th className="text-left px-6 py-3 font-medium">발동 시각</th>
                 <th className="text-left px-6 py-3 font-medium">측정값</th>
+                <th className="text-left px-6 py-3 font-medium">영향 유저</th>
+                <th className="text-left px-6 py-3 font-medium">총 보상금</th>
               </tr>
             </thead>
             <tbody>
@@ -116,11 +140,18 @@ export default function AdminTriggersPage() {
                     <td className="px-6 py-4 font-medium">
                       {getMeasuredValue(trigger)}
                     </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {trigger.affected_users != null ? `${trigger.affected_users.toLocaleString()}명` : '—'}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-success">
+                      {trigger.total_reward_amount != null ? `${trigger.total_reward_amount.toLocaleString()}원` : '—'}
+                    </td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+
           {filtered.length === 0 && (
             <div className="text-center py-12 text-muted-foreground text-sm">
               {search ? '검색 결과가 없습니다.' : '트리거 내역이 없습니다.'}
