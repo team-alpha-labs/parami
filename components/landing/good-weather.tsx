@@ -13,7 +13,7 @@ export function GoodWeather() {
   const months = GOOD_WEATHER_CONDITIONS.months.join('·')
 
   return (
-    <FadeUp className="px-6 pb-12 md:px-12 md:pb-16">
+    <FadeUp className="px-6 pb-20 md:px-12 md:pb-28">
       <Card className="mx-auto max-w-4xl border-border/50 p-5 shadow-md md:p-6">
         <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:gap-4">
           <div className="flex shrink-0 items-center gap-1">

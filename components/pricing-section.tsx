@@ -92,7 +92,7 @@ export function PricingSection() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 py-12">
+    <section className="mx-auto w-full max-w-5xl px-6 py-20 md:py-28">
       <h2 className="text-center text-3xl font-bold text-foreground md:text-4xl">
         요금제 선택
       </h2>

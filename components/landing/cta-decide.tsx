@@ -10,7 +10,7 @@ import { FadeUp } from '@/components/motion/fade-up'
 
 export function CtaDecide() {
   return (
-    <FadeUp className="px-6 py-12 md:px-12 md:py-20">
+    <FadeUp className="px-6 py-20 md:px-12 md:py-28">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
           보상받을 준비가 되셨나요?

@@ -30,6 +30,16 @@ export function Intro() {
           어려운 약관도, 설계사 상담도, 긴 서류도 없습니다.
         </p>
 
+        {/* 핵심 stat — 좌측 액센트 바 (본문/티어 바 좌측 정렬과 연결) */}
+        <div className="mt-8 border-l-4 border-primary pl-4 md:mt-10">
+          <p className="text-lg font-bold text-foreground md:text-xl">
+            월 평균 <span className="text-primary">9.5회</span> 자동 지급
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            트리거 5종 + 맑은 날 보너스 합산
+          </p>
+        </div>
+
         <div className="mt-10 grid grid-cols-1 divide-y-2 divide-border md:mt-14 md:grid-cols-3 md:divide-x-2 md:divide-y-0 md:border-x-2 md:border-border">
           {TIERS.map((tier) => (
             <div key={tier.name} className="px-6 py-6 text-center">
