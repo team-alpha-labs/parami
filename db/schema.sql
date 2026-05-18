@@ -8,6 +8,9 @@ CREATE TABLE users (
   role       ENUM('user','admin') NOT NULL DEFAULT 'user',
   balance    INT          NOT NULL DEFAULT 0,
   created_at DATETIME     NOT NULL DEFAULT NOW(),
+  -- soft delete: 탈퇴 시 deleted_at = UTC_TIMESTAMP() + email/name 익명화
+  -- 모든 조회 함수는 WHERE deleted_at IS NULL 필터 필수
+  deleted_at DATETIME     NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_email (email)
 );

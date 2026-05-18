@@ -2,9 +2,12 @@ import pool from '@/lib/db'
 import { ResultSetHeader, RowDataPacket } from 'mysql2'
 import { UserAccountRow, UserRow } from '@/types/db'
 
+// 탈퇴 회원(deleted_at IS NOT NULL)은 인증/조회에서 보이지 않게 한다.
+// 결제·보상·구독 행은 그대로 보존되어 admin 통계엔 잡힘.
+
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, email, name, role, balance, created_at FROM users WHERE email = ? LIMIT 1',
+    'SELECT id, email, name, role, balance, created_at FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1',
     [email],
   )
   return (rows[0] as UserRow) ?? null
@@ -12,7 +15,7 @@ export async function findUserByEmail(email: string): Promise<UserRow | null> {
 
 export async function findUserById(id: number): Promise<UserRow | null> {
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, email, name, role, balance, created_at FROM users WHERE id = ? LIMIT 1',
+    'SELECT id, email, name, role, balance, created_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
     [id],
   )
   return (rows[0] as UserRow) ?? null
@@ -103,15 +106,40 @@ export async function updateUserName(id: number, name: string): Promise<void> {
   await pool.query('UPDATE users SET name = ? WHERE id = ?', [name, id])
 }
 
-export async function deleteUserCascade(id: number): Promise<void> {
+// 회원 탈퇴 — soft delete + 익명화
+//   1) active 구독 있으면 cancelled로 전환 (cancelled_at = NOW)
+//   2) users 행은 보존, deleted_at + email/name 익명화
+//      - email 'deleted_<id>@deleted'로 → UNIQUE 충돌 회피 + 원래 이메일로 재가입 가능
+//      - name '(탈퇴한 회원)' → 관리자 화면 표시용
+//   3) user_accounts 삭제 (로그인 정보, 비즈니스 데이터 아님)
+//   payments/reward_logs/subscriptions는 보존 — 회계·운영 통계 정합 유지
+export async function softDeleteUser(id: number): Promise<void> {
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
-    await conn.query('DELETE FROM reward_logs WHERE user_id = ?', [id])
-    await conn.query('DELETE FROM payments WHERE user_id = ?', [id])
-    await conn.query('DELETE FROM subscriptions WHERE user_id = ?', [id])
+
+    // 1) active 구독 해지 처리 (없으면 noop)
+    await conn.query(
+      `UPDATE subscriptions
+         SET status = 'cancelled',
+             cancelled_at = UTC_TIMESTAMP()
+       WHERE user_id = ? AND status = 'active' AND cancelled_at IS NULL`,
+      [id],
+    )
+
+    // 2) users 익명화 + deleted_at 기록
+    await conn.query(
+      `UPDATE users
+         SET deleted_at = UTC_TIMESTAMP(),
+             email = CONCAT('deleted_', id, '@deleted'),
+             name = '(탈퇴한 회원)'
+       WHERE id = ?`,
+      [id],
+    )
+
+    // 3) 로그인 자격 제거
     await conn.query('DELETE FROM user_accounts WHERE user_id = ?', [id])
-    await conn.query('DELETE FROM users WHERE id = ?', [id])
+
     await conn.commit()
   } catch (e) {
     await conn.rollback()
