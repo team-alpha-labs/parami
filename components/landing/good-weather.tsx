@@ -34,7 +34,7 @@ export function GoodWeather() {
               강수 {GOOD_WEATHER_CONDITIONS.rain_max}mm 이하 + PM2.5 ≤{' '}
               {GOOD_WEATHER_CONDITIONS.dust_max} + 풍속 ≤{' '}
               {GOOD_WEATHER_CONDITIONS.wind_max}m/s 세 조건 동시 충족 시 지급 —
-              봄과 가을에 적용됩니다 ({months}월)
+              봄과 가을에 적용돼요 ({months}월)
             </p>
           </div>
         </div>

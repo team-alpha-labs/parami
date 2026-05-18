@@ -25,9 +25,9 @@ export function Intro() {
           날씨 기반 자동 보상 — 새로운 개념의 보험
         </h2>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-          Parami는 날씨가 기준을 넘으면 보상금이 자동 지급되는 날씨 보험입니다.
+          Parami는 날씨가 기준을 넘으면 보상금이 자동으로 지급되는 날씨 보험이에요.
           <br />
-          어려운 약관도, 설계사 상담도, 긴 서류도 없습니다.
+          어려운 약관도, 설계사 상담도, 긴 서류도 없어요.
         </p>
 
         {/* 핵심 stat — 좌측 액센트 바 (본문/티어 바 좌측 정렬과 연결) */}

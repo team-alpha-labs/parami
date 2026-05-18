@@ -65,7 +65,7 @@ export function WithdrawModal({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>회원 탈퇴</DialogTitle>
           <DialogDescription>
-            탈퇴 시 계정과 관련된 모든 데이터가 영구 삭제됩니다.
+            탈퇴하면 계정과 관련된 모든 데이터가 영구 삭제돼요.
           </DialogDescription>
         </DialogHeader>
 
@@ -91,7 +91,7 @@ export function WithdrawModal({ open, onOpenChange }: Props) {
             onChange={(e) => setAgreed(e.target.checked)}
             className="h-4 w-4 cursor-pointer rounded border-input text-primary focus:ring-ring"
           />
-          위 내용을 확인했으며, 회원 탈퇴에 동의합니다.
+          위 내용을 확인했고, 회원 탈퇴에 동의해요.
         </label>
 
         <DialogFooter>
@@ -100,7 +100,7 @@ export function WithdrawModal({ open, onOpenChange }: Props) {
             onClick={() => onOpenChange(false)}
             disabled={withdraw.isPending}
           >
-            취소
+            돌아가기
           </Button>
           <Button
             variant="destructive"
