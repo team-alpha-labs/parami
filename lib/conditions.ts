@@ -22,10 +22,12 @@ export const MAX_REWARD_PER_MONTH = 10
 export const SNOW_PTY_CODES: readonly number[] = [2, 3, 6, 7]
 
 // 트리거 1회당 지급 보상금 (단위: 원)
-// plans.description의 월 보상금(800/1400/2300) / MAX_REWARD_PER_MONTH(10)
-// = 80 / 140 / 230. 월 10회 캡까지 모두 채우면 명세 월 보상금과 일치.
+// plans.description의 월 보상금(8,000/14,000/23,000) / MAX_REWARD_PER_MONTH(10)
+// = 800 / 1,400 / 2,300. 월 10회 캡까지 모두 채우면 명세 월 보상금과 일치.
+// 랜딩 Intro의 연간 기대액(basic 90,700 / standard 158,600 / premium 260,600)과
+// 평균 9.5회/월 × 12개월 기준으로 정합.
 export const REWARD_AMOUNT_PER_TRIGGER_BY_TIER = {
-  basic: 80,
-  standard: 140,
-  premium: 230,
+  basic: 800,
+  standard: 1400,
+  premium: 2300,
 } as const
