@@ -12,6 +12,7 @@ import { LogoutButton } from '@/components/logout-button'
 export async function Header() {
   const session = await getServerSession()
   const isLoggedIn = !!session
+  const isAdmin = session?.role === 'admin'
 
   return (
     <header className="border-b bg-background">
@@ -25,6 +26,11 @@ export async function Header() {
           {isLoggedIn && (
             <Link href="/home" className="text-sm font-medium text-foreground hover:text-primary">
               홈
+            </Link>
+          )}
+          {isAdmin && (
+            <Link href="/admin/dashboard" className="text-sm font-medium text-destructive hover:text-destructive/80">
+              관리자
             </Link>
           )}
           <Link href="/" className="text-sm font-medium text-foreground hover:text-primary">
