@@ -80,7 +80,7 @@ export default function WeatherPage() {
         <p className="mt-1 text-3xl font-bold">
           {data.location === 'seoul' ? '서울' : data.location}
         </p>
-        <p className="mt-1 text-xs opacity-80">{formatDateTimeKST(data.measured_at)}</p>
+        <p className="mt-1 text-xs opacity-80">{formatDateTimeKST(data.measured_at)} 측정</p>
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <Stat label="기온" value={fmt(data.temp_c, '°C')} />
