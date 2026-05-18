@@ -59,7 +59,7 @@ export function Hero() {
                   href="/home"
                   className="underline-offset-4 hover:text-white hover:underline"
                 >
-                  메인페이지로 ↗
+                  홈으로 ↗
                 </Link>
               </div>
             </div>

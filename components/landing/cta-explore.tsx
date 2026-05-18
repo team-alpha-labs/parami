@@ -5,13 +5,13 @@
 // - FadeUp 스크롤 진입 모션
 // - import: app/page.tsx
 
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { FadeUp } from '@/components/motion/fade-up'
 
 export function CtaExplore() {
   return (
-    <FadeUp className="px-6 py-16 md:px-12 md:py-24">
+    <div id="explore">
+      <FadeUp className="px-6 py-16 md:px-12 md:py-24">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-3xl font-bold leading-tight text-foreground md:text-5xl">
           쉬운 날씨 보험,
@@ -29,12 +29,14 @@ export function CtaExplore() {
             <a href="#compare">상품 상세설명 ↗</a>
           </Button>
 
-          {/* 아웃라인 버튼 — 요금제 (/pricing 페이지) */}
+          {/* 아웃라인 버튼 — 요금제 (#pricing 앵커, §8 PricingSection으로 스크롤) */}
+          {/* native <a>로 — Next.js <Link>의 hash-only navigation 불안정 우회 */}
           <Button asChild size="lg" variant="outline">
-            <Link href="/pricing">요금제 바로가기</Link>
+            <a href="#pricing">요금제 바로가기</a>
           </Button>
         </div>
       </div>
     </FadeUp>
+    </div>
   )
 }
