@@ -9,6 +9,9 @@ const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  // PR #19 컨벤션: 모든 DATETIME 컬럼은 UTC로 저장.
+  // mysql2가 환경(로컬 KST vs Cloud Run UTC)별로 다르게 해석하지 않도록 UTC 고정.
+  timezone: 'Z',
 })
 
 export default pool
