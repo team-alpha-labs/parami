@@ -48,16 +48,7 @@ export function Hero() {
           <div className="flex justify-end">
             <div className="text-right">
               <p className="text-3xl font-extrabold md:text-5xl">Parami</p>
-              <div className="mt-1 flex justify-end gap-2 text-xs text-white/80 md:text-sm">
-                <Link
-                  href="/login"
-                  className="underline-offset-4 hover:text-white hover:underline"
-                >
-                  로그인
-                </Link>
-                <span className="text-white/50" aria-hidden>
-                  ·
-                </span>
+              <div className="mt-1 flex justify-end text-xs text-white/80 md:text-sm">
                 <Link
                   href="/home"
                   className="underline-offset-4 hover:text-white hover:underline"
@@ -75,7 +66,7 @@ export function Hero() {
               href="#image-grid"
               className="text-base font-medium underline-offset-4 hover:underline md:text-lg"
             >
-              △ 상품 상세설명
+              ▽ 상품 상세설명
             </a>
           </div>
         </div>
