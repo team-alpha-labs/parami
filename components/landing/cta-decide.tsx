@@ -17,7 +17,7 @@ export async function CtaDecide() {
   const href = session ? '/pricing' : '/signup'
 
   return (
-    <FadeUp className="px-6 py-20 md:px-12 md:py-28">
+    <FadeUp className="px-6 py-16 md:px-12 md:py-24">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
           보상받을 준비가 되셨나요?
