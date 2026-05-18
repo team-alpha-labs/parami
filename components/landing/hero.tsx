@@ -1,12 +1,18 @@
+'use client'
+
 // 랜딩 §1 — 히어로 섹션
 // - 비 내리는 영상 배경 + 상단 카피 + 우하단 워드마크 + 좌하단 링크
-// - LCP 우선 — framer-motion 미사용 (정적 서버 컴포넌트)
-// - prefers-reduced-motion: 영상 숨기고 포스터 이미지만 표시
+// - 하단 ChevronDown 스크롤 인디케이터에 framer-motion 바운스 적용 → 'use client' 필요
+// - prefers-reduced-motion: 영상 숨기고 포스터 이미지만 표시 + 바운스 애니메이션 비활성화
 // - import: app/page.tsx
 
+import { motion, useReducedMotion } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 export function Hero() {
+  const shouldReduceMotion = useReducedMotion()
+
   return (
     <section className="relative min-h-[600px] w-full overflow-hidden bg-muted md:min-h-[80svh]">
       {/*
@@ -48,16 +54,7 @@ export function Hero() {
           <div className="flex justify-end">
             <div className="text-right">
               <p className="text-3xl font-extrabold md:text-5xl">Parami</p>
-              <div className="mt-1 flex justify-end gap-2 text-xs text-white/80 md:text-sm">
-                <Link
-                  href="/login"
-                  className="underline-offset-4 hover:text-white hover:underline"
-                >
-                  로그인
-                </Link>
-                <span className="text-white/50" aria-hidden>
-                  ·
-                </span>
+              <div className="mt-1 flex justify-end text-xs text-white/80 md:text-sm">
                 <Link
                   href="/home"
                   className="underline-offset-4 hover:text-white hover:underline"
@@ -70,13 +67,20 @@ export function Hero() {
 
           {/* 하단 중앙 — 상품 상세설명 (§2 ImageGrid 앵커) */}
           {/* native <a>로 사용 — Next.js <Link>의 hash-only navigation 불안정 우회 */}
-          <div className="mt-6 text-center md:mt-10">
-            <a
+          <div className="mt-6 flex justify-center md:mt-10">
+            <motion.a
               href="#image-grid"
-              className="text-base font-medium underline-offset-4 hover:underline md:text-lg"
+              aria-label="상품 상세설명으로 스크롤"
+              className="inline-flex items-center justify-center hover:opacity-80"
+              animate={shouldReduceMotion ? undefined : { y: [0, 8, 0] }}
+              transition={
+                shouldReduceMotion
+                  ? undefined
+                  : { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+              }
             >
-              △ 상품 상세설명
-            </a>
+              <ChevronDown className="h-10 w-10 md:h-12 md:w-12" aria-hidden />
+            </motion.a>
           </div>
         </div>
       </div>

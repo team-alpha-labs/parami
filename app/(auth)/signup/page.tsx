@@ -239,7 +239,7 @@ export default function SignupPage() {
                   className="mt-3 flex items-center gap-2 text-sm text-foreground"
                 >
                   <CheckBox checked={agreed[a.key]} />
-                  <span>{a.label}에 동의합니다</span>
+                  <span>{a.label}에 동의해요</span>
                 </button>
               </div>
             ))}
