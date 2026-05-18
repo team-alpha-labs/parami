@@ -14,6 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
   UserPlus,
+  UserMinus,
   Zap,
 } from 'lucide-react'
 import { api } from '@/lib/client'
@@ -33,7 +34,7 @@ type DashboardData = {
     revenue: number | null
   }
   recent: Array<{
-    type: 'signup' | 'payment' | 'reward' | 'trigger'
+    type: 'signup' | 'payment' | 'reward' | 'trigger' | 'cancel'
     email: string | null
     name: string | null
     amount: number | null
@@ -261,12 +262,13 @@ function StatCard({
   )
 }
 
-function ActivityDot({ type }: { type: 'signup' | 'payment' | 'reward' | 'trigger' }) {
+function ActivityDot({ type }: { type: 'signup' | 'payment' | 'reward' | 'trigger' | 'cancel' }) {
   const config = {
     signup: { Icon: UserPlus, color: 'text-muted-foreground' },
     payment: { Icon: CreditCard, color: 'text-primary' },
     reward: { Icon: Gift, color: 'text-success' },
     trigger: { Icon: Zap, color: 'text-warning' },
+    cancel: { Icon: UserMinus, color: 'text-destructive' },
   }[type]
   const { Icon, color } = config
 
@@ -290,5 +292,7 @@ function renderActivity(r: DashboardData['recent'][number]): string {
       const label = r.trigger_type ? TRIGGER_LABEL[r.trigger_type] ?? r.trigger_type : '트리거'
       return `${label} 트리거 발동`
     }
+    case 'cancel':
+      return `${who} 구독 해지`
   }
 }

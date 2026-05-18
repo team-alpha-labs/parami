@@ -288,11 +288,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 최근 활동 — 4개 테이블 UNION ALL로 시간순 5건
+// 최근 활동 — 5개 이벤트 소스 UNION ALL로 시간순
 // ─────────────────────────────────────────────────────────────
 
 export type RecentActivity = {
-  type: 'signup' | 'payment' | 'reward' | 'trigger'
+  type: 'signup' | 'payment' | 'reward' | 'trigger' | 'cancel'
   email: string | null
   name: string | null
   amount: number | null
@@ -301,7 +301,7 @@ export type RecentActivity = {
 }
 
 export async function getRecentActivity(limit: number = 5): Promise<RecentActivity[]> {
-  // 4개 이벤트 소스를 UNION ALL로 합쳐 시간순 정렬 후 LIMIT
+  // 5개 이벤트 소스를 UNION ALL로 합쳐 시간순 정렬 후 LIMIT
   // 컬럼 수/타입이 맞아야 union 가능 → 빈 컬럼은 NULL로 채움
   const [rows] = await pool.query<RowDataPacket[]>(
     `(
@@ -327,6 +327,13 @@ export async function getRecentActivity(limit: number = 5): Promise<RecentActivi
        SELECT 'trigger' AS type, NULL AS email, NULL AS name,
               NULL AS amount, t.trigger_type, t.triggered_at AS at
        FROM trigger_logs t
+     )
+     UNION ALL
+     (
+       SELECT 'cancel' AS type, u.email, u.name,
+              NULL AS amount, NULL AS trigger_type, s.cancelled_at AS at
+       FROM subscriptions s JOIN users u ON u.id = s.user_id
+       WHERE s.cancelled_at IS NOT NULL
      )
      ORDER BY at DESC
      LIMIT ?`,
