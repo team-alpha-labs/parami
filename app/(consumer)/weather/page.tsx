@@ -86,7 +86,7 @@ export default function WeatherPage() {
           <Stat label="기온" value={fmt(data.temp_c, '°C')} />
           <Stat label="강수량" value={fmt(data.rain_mm, 'mm')} />
           <Stat label="적설" value={data.snow ? '내림' : '없음'} />
-          <Stat label="미세먼지" value={data.pm25 != null ? `PM2.5 ${data.pm25}` : '-'} />
+          <Stat label="미세먼지 (PM2.5)" value={fmt(data.pm25, '')} />
         </div>
       </div>
 
@@ -116,8 +116,8 @@ export default function WeatherPage() {
         />
         <WeatherTile
           icon={Wind}
-          label="미세먼지"
-          value={data.pm25 != null ? `PM2.5 ${data.pm25}` : '-'}
+          label="미세먼지 (PM2.5)"
+          value={fmt(data.pm25, '')}
           sub={`트리거 ${TRIGGER_CONDITIONS.dust}`}
           triggered={dustTriggered}
         />
@@ -128,7 +128,9 @@ export default function WeatherPage() {
 
 function fmt(n: number | null, unit: string) {
   if (n == null) return '-'
-  return `${n}${unit}`
+  // 외부 API 평균값이 14.81578... 처럼 길게 오는 경우 → 소수점 1자리로 정리
+  const rounded = Math.round(n * 10) / 10
+  return `${rounded}${unit}`
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

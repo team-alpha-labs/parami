@@ -139,8 +139,12 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
     if (!plan) return
     setRequesting(true)
     try {
-      const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY
-      if (!clientKey) throw new Error('NEXT_PUBLIC_TOSS_CLIENT_KEY 환경변수 누락')
+      // NEXT_PUBLIC_* 변수는 Next.js 빌드 타임에 inline됨. Cloud Run runtime env로는 못 주입.
+      // Cloud Build에서 --build-arg로 전달하지 못하면 코드 fallback이 안전망.
+      // 토스 공식 테스트 키 (NEXT_PUBLIC이라 클라이언트 노출 OK).
+      const clientKey =
+        process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ||
+        'test_ck_ex6BJGQOVD9o92O2dGjnrW4w2zNb'
 
       const tossPayments = await loadTossPayments(clientKey)
       const origin = window.location.origin
