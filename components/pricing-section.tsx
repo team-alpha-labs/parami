@@ -17,7 +17,6 @@ import { api, ApiError } from '@/lib/client'
 import { useMe } from '@/hooks/use-me'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 type Tier = 'basic' | 'standard' | 'premium'
 type Plan = { tier: Tier; price: number }
@@ -37,6 +36,11 @@ const TIER_FEATURES: Record<Tier, string[]> = {
   standard: ['회당 1,400원 보상', '월 최대 10회 수령', 'Standard 전용 이벤트'],
   premium: ['회당 2,300원 보상', '월 최대 10회 수령', 'Premium 전용 이벤트'],
 }
+
+// 모든 선택하기 버튼 공통: outline 기본 → hover/group-hover 시 primary 채움
+// (hover와 group-hover 둘 다 — 직접 버튼 hover든 카드 hover든 동일하게 동작)
+const SELECT_BTN_HOVER =
+  'w-full hover:bg-primary hover:text-primary-foreground hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary'
 
 export function PricingSection() {
   const queryClient = useQueryClient()
@@ -108,13 +112,10 @@ export function PricingSection() {
           return (
             <Card
               key={plan.tier}
-              className={cn(
-                'relative flex flex-col',
-                isHighlighted && 'border-primary border-2 shadow-md',
-              )}
+              className="group relative flex flex-col border-2 transition duration-300 ease-out hover:-translate-y-1 hover:border-primary hover:shadow-lg"
             >
               {isHighlighted && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-medium text-primary-foreground">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-medium text-primary-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                   인기
                 </span>
               )}
@@ -142,19 +143,11 @@ export function PricingSection() {
                 </ul>
 
                 {!me ? (
-                  <Button
-                    asChild
-                    variant={isHighlighted ? 'default' : 'outline'}
-                    className="w-full"
-                  >
+                  <Button asChild variant="outline" className={SELECT_BTN_HOVER}>
                     <Link href="/signup">선택하기</Link>
                   </Button>
                 ) : !mySubscription ? (
-                  <Button
-                    asChild
-                    variant={isHighlighted ? 'default' : 'outline'}
-                    className="w-full"
-                  >
+                  <Button asChild variant="outline" className={SELECT_BTN_HOVER}>
                     <Link href={`/payment?tier=${plan.tier}`}>선택하기</Link>
                   </Button>
                 ) : isCurrent ? (
@@ -165,8 +158,8 @@ export function PricingSection() {
                   <Button
                     onClick={() => changeTier.mutate(plan.tier)}
                     disabled={changeTier.isPending}
-                    variant={isHighlighted ? 'default' : 'outline'}
-                    className="w-full"
+                    variant="outline"
+                    className={SELECT_BTN_HOVER}
                   >
                     {isPending ? '변경 중...' : '선택하기'}
                   </Button>

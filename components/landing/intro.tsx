@@ -36,11 +36,14 @@ export function Intro() {
               <p className="text-lg font-semibold text-foreground md:text-xl">
                 {tier.name} 기준
               </p>
-              <p className="mt-2 text-2xl font-bold text-foreground md:text-3xl">
+              <p className="mt-2 inline-block text-2xl font-bold text-foreground transition duration-500 ease-out hover:scale-110 hover:text-primary md:text-3xl">
                 {tier.amount}
                 <span className="ml-1 text-base font-medium text-muted-foreground md:text-lg">
                   + a
                 </span>
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                연간 수령 기대액
               </p>
             </div>
           ))}
