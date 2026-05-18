@@ -184,7 +184,7 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
       <h1 className="text-2xl font-bold text-foreground">결제하기</h1>
 
       {/* 요금제 요약 */}
-      <div className="mt-6 rounded-lg border bg-background p-6">
+      <div className="mt-6 rounded-lg border border-border/50 bg-background p-6 shadow-sm">
         <p className="text-base font-semibold text-foreground">선택한 요금제</p>
         <div className="mt-3 flex items-baseline justify-between">
           <p className="text-lg font-semibold text-foreground">{plan.name} 플랜</p>
@@ -227,7 +227,7 @@ function PaymentSelect({ tier, customerName }: { tier: Tier; customerName: strin
       </p>
 
       {/* 결제 수단: requestPayment('카드') 호출이라 카드만 노출 (멀티 수단 필요 시 widget SDK로 전환) */}
-      <div className="mt-6 rounded-lg bg-muted/50 p-5">
+      <div className="mt-6 rounded-lg border border-border/50 bg-muted/50 p-5 shadow-sm">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <CreditCard className="h-4 w-4" />
           결제 수단
