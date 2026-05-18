@@ -40,6 +40,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# landing hero video — 원본/중간 산출물은 커밋 제외 (최종 rain-hero.mp4만 커밋)
+public/videos/*.original.mp4
+public/videos/*.compressed.mp4
+public/videos/*.trimmed.mp4
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

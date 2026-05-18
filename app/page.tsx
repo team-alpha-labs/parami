@@ -1,17 +1,49 @@
-// 랜딩 페이지 (담당: 여진)
+// 랜딩 페이지 진입점 (담당: 여진)
+// §1~§9 섹션을 components/landing/*에서 import해 조립
 // 디자인: docs/figma/consumer/landing.png
-// 작업 시 docs/frontend-guide.md 참고
+// 가이드: docs/frontend-guide.md
+//
+// 섹션 매핑:
+//   §1 Hero            — components/landing/hero.tsx
+//   §2 ImageGrid       — (Phase 2)
+//   §3 Intro           — (Phase 3)
+//   §4 CtaExplore      — (Phase 4)
+//   §5 Compare         — (Phase 5)
+//   §6 TriggerCards    — (Phase 6)
+//   §7 GoodWeather     — (Phase 7)
+//   §8 PricingSection  — (Phase 8 — 소라 PR 머지 후 components/pricing-section.tsx 연결)
+//   §9 CtaDecide       — (Phase 9)
+//
+// app/layout.tsx가 Header/Footer/<main>을 wrap하므로 페이지에선 본문 섹션만 둠.
+
+import { Hero } from '@/components/landing/hero'
+import { ImageGrid } from '@/components/landing/image-grid'
+import { Intro } from '@/components/landing/intro'
+import { CtaExplore } from '@/components/landing/cta-explore'
+import { Compare } from '@/components/landing/compare'
+import { TriggerCards } from '@/components/landing/trigger-cards'
+import { GoodWeather } from '@/components/landing/good-weather'
+import { CtaDecide } from '@/components/landing/cta-decide'
+import { PricingSection } from '@/components/pricing-section'
 
 export default function LandingPage() {
   return (
-    <div className="mx-auto max-w-5xl px-6 py-16">
-      <h1 className="text-4xl font-bold text-foreground">Parami</h1>
-      <p className="mt-4 text-lg text-muted-foreground">
-        🚧 랜딩 페이지 — 여진 작업 예정 (docs/figma/consumer/landing.png)
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        프론트엔드 셋업 완료 — 페이지 작성 시 위 디자인 참조 + docs/frontend-guide.md 가이드 따를 것
-      </p>
-    </div>
+    <>
+      <Hero />
+      <ImageGrid />
+      <Intro />
+      <CtaExplore />
+      <Compare />
+      <TriggerCards />
+      <GoodWeather />
+
+      {/* §8 요금제 — components/pricing-section.tsx (소라 작업, main에 머지됨) */}
+      {/* wrapper #pricing은 백업 앵커 (현재 §4 CTA는 /pricing 페이지로 이동) */}
+      <section id="pricing">
+        <PricingSection />
+      </section>
+
+      <CtaDecide />
+    </>
   )
 }
