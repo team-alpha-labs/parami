@@ -86,6 +86,7 @@ export default function AdminUsersPage() {
               <tr className="border-b text-muted-foreground">
                 <th className="text-left px-6 py-3 font-medium">ID</th>
                 <th className="text-left px-6 py-3 font-medium">이메일</th>
+                <th className="text-left px-6 py-3 font-medium">이름</th>
                 <th className="text-left px-6 py-3 font-medium">플랜</th>
                 <th className="text-left px-6 py-3 font-medium">상태</th>
                 <th className="text-left px-6 py-3 font-medium">가입일</th>
@@ -103,6 +104,7 @@ export default function AdminUsersPage() {
                       {user.email}
                     </div>
                   </td>
+                  <td className="px-6 py-4">{user.name}</td>
                   <td className="px-6 py-4">
                     {user.tier ? TIER_LABEL[user.tier] : '—'}
                   </td>
