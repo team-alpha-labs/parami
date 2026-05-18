@@ -1,17 +1,95 @@
 'use client'
 
-// /mypage — 본인 보상/결제/구독 요약
-// 디자인의 "이번 달 트리거 현황 5종" 섹션은 trigger_type별 집계 API 필요 — 후속 PR
+// /mypage — 본인 보상/결제/구독 요약 + 이번 달 트리거 현황
+// 트리거 현황: /api/rewards/me 결과를 client-side에서 trigger_type별 그루핑
+//   (KST 기준 이번 달 reward_year/reward_month로 필터)
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
+import {
+  CloudRain,
+  CloudSnow,
+  CreditCard,
+  Gift,
+  Sparkles,
+  Sun,
+  Thermometer,
+  Wind,
+} from 'lucide-react'
 import { api } from '@/lib/client'
 import { useMe } from '@/hooks/use-me'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { WithdrawModal } from '@/components/withdraw-modal'
-import type { SubscriptionRow } from '@/types/db'
+import { TRIGGER_CONDITIONS } from '@/lib/conditions'
+import type { RewardRow, SubscriptionRow, TriggerType } from '@/types/db'
+
+// 트리거 표시 정보 — 시안 순서: 비/폭염/미세먼지 / 맑은 날 보너스/한파/눈
+// bg·text 클래스는 Tailwind 정적 검출을 위해 풀 문자열로 (동적 보간 X)
+const TRIGGER_DISPLAY: Array<{
+  key: TriggerType
+  label: string
+  icon: typeof CloudRain
+  condition: string
+  bg: string
+  text: string
+}> = [
+  {
+    key: 'rain',
+    label: '비',
+    icon: CloudRain,
+    condition: `강수 ${TRIGGER_CONDITIONS.rain}mm 이상`,
+    bg: 'bg-trigger-rain/10',
+    text: 'text-trigger-rain',
+  },
+  {
+    key: 'heat',
+    label: '폭염',
+    icon: Sun,
+    condition: `최고 ${TRIGGER_CONDITIONS.heat}℃ 이상`,
+    bg: 'bg-trigger-heat/10',
+    text: 'text-trigger-heat',
+  },
+  {
+    key: 'dust',
+    label: '미세먼지',
+    icon: Wind,
+    condition: `PM2.5 ${TRIGGER_CONDITIONS.dust} 이상`,
+    bg: 'bg-trigger-dust/10',
+    text: 'text-trigger-dust',
+  },
+  {
+    key: 'good_weather',
+    label: '맑은 날 보너스',
+    icon: Sparkles,
+    condition: 'good_weather',
+    bg: 'bg-trigger-good/10',
+    text: 'text-trigger-good',
+  },
+  {
+    key: 'cold',
+    label: '한파',
+    icon: Thermometer,
+    condition: `최저 ${TRIGGER_CONDITIONS.cold}℃ 이하`,
+    bg: 'bg-trigger-cold/10',
+    text: 'text-trigger-cold',
+  },
+  {
+    key: 'snow',
+    label: '눈',
+    icon: CloudSnow,
+    condition: '기상청 기준',
+    bg: 'bg-trigger-snow/10',
+    text: 'text-trigger-snow',
+  },
+]
+
+// KST 기준 이번 달
+function getKstYearMonth() {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+  return { year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1 }
+}
 
 type RewardSummary = {
   totalCount: number
@@ -63,7 +141,28 @@ export default function MyPage() {
     queryFn: () => api.get<Plan[]>('/api/plans'),
   })
 
+  const { data: rewards } = useQuery<RewardRow[]>({
+    queryKey: ['rewards', 'me'],
+    queryFn: () => api.get<RewardRow[]>('/api/rewards/me'),
+    enabled: !!me,
+  })
+
   const currentPlan = plans?.find((p) => p.tier === subscription?.tier)
+
+  // 이번 달 보상만 trigger_type별 카운트 + 금액 합산 (KST 기준)
+  const { year, month } = getKstYearMonth()
+  const triggerCounts = (rewards ?? []).reduce<Record<TriggerType, number>>(
+    (acc, r) => {
+      if (r.reward_year === year && r.reward_month === month) {
+        acc[r.trigger_type] = (acc[r.trigger_type] ?? 0) + 1
+      }
+      return acc
+    },
+    { rain: 0, heat: 0, cold: 0, snow: 0, dust: 0, good_weather: 0 },
+  )
+  const thisMonthAmount = (rewards ?? [])
+    .filter((r) => r.reward_year === year && r.reward_month === month)
+    .reduce((sum, r) => sum + r.amount, 0)
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -82,23 +181,42 @@ export default function MyPage() {
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* 누적 보상 카드 */}
         <div className="rounded-lg bg-primary p-6 text-primary-foreground">
-          <p className="text-sm font-medium opacity-90">누적 보상금</p>
+          <div className="flex items-center gap-2">
+            <Gift className="h-5 w-5" aria-hidden />
+            <p className="text-sm font-medium opacity-90">누적 보상금</p>
+          </div>
           <p className="mt-3 text-4xl font-bold">
             {(summary?.totalAmount ?? 0).toLocaleString()}
             <span className="ml-1 text-base font-normal opacity-90">원</span>
           </p>
-          <div className="mt-4 flex gap-4 text-xs opacity-90">
-            <span>이번 달 {summary?.thisMonthCount ?? 0}회</span>
-            <span>총 {summary?.totalCount ?? 0}회</span>
+          <div className="mt-6 space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="opacity-80">이번 달 보상</span>
+              <span className="font-semibold">
+                {thisMonthAmount.toLocaleString()}원
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="opacity-80">총 트리거 횟수</span>
+              <span className="font-semibold">
+                {(summary?.totalCount ?? 0).toLocaleString()}회
+              </span>
+            </div>
           </div>
-          <Button asChild variant="secondary" className="mt-6 w-full">
+          <Button
+            asChild
+            className="mt-6 w-full border-transparent bg-white/30 text-primary-foreground hover:bg-white/40"
+          >
             <Link href="/rewards">보상 내역 보기</Link>
           </Button>
         </div>
 
         {/* 결제 정보 카드 */}
-        <div className="rounded-lg border bg-background p-6">
-          <p className="text-sm font-semibold text-foreground">결제 정보</p>
+        <div className="rounded-lg border border-border/50 bg-background p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-foreground" aria-hidden />
+            <p className="text-sm font-semibold text-foreground">결제 정보</p>
+          </div>
 
           {subscription ? (
             <dl className="mt-4 space-y-3 text-sm">
@@ -132,9 +250,9 @@ export default function MyPage() {
               </div>
             </dl>
           ) : (
-            <div className="mt-6 text-center">
+            <div className="mt-6 flex flex-col items-center justify-center gap-4 py-8">
               <p className="text-sm text-muted-foreground">구독 중인 플랜이 없어요.</p>
-              <Button asChild className="mt-4">
+              <Button asChild>
                 <Link href="/pricing">요금제 보러 가기</Link>
               </Button>
             </div>
@@ -142,8 +260,54 @@ export default function MyPage() {
         </div>
       </div>
 
-      {/* 회원 탈퇴 — 가입 해지(구독 해지)와 별개. 페이지 하단에 위험 액션으로 분리 */}
-      <div className="mt-12 border-t pt-6 text-center">
+      {/* 이번 달 트리거 현황 — /api/rewards/me 결과를 trigger_type별 그루핑 (KST 이번 달) */}
+      <section className="mt-10">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-1 rounded bg-primary" aria-hidden />
+          <h2 className="text-lg font-bold text-foreground md:text-xl">
+            이번 달 트리거 현황
+          </h2>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+          {TRIGGER_DISPLAY.map(({ key, label, icon: Icon, condition, bg, text }) => {
+            const count = triggerCounts[key]
+            return (
+              <div
+                key={key}
+                className="rounded-lg border border-border/50 bg-background p-4 shadow-sm md:p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`inline-flex shrink-0 rounded-md p-2 ${bg}`}>
+                    <Icon className={`h-5 w-5 ${text}`} aria-hidden />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground md:text-base">
+                      {label}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {condition}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-end justify-between">
+                  <span className="text-2xl font-bold text-foreground md:text-3xl">
+                    {count}
+                    <span className="ml-0.5 text-base font-normal text-muted-foreground">
+                      회
+                    </span>
+                  </span>
+                  <Badge variant={count > 0 ? 'success' : 'muted'}>
+                    {count > 0 ? '지급됨' : '대기 중'}
+                  </Badge>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* 회원 탈퇴 — 가입 해지(구독 해지)와 별개. 페이지 우측 하단에 위험 액션으로 분리 */}
+      <div className="mt-12 flex justify-end">
         <button
           type="button"
           onClick={() => setWithdrawOpen(true)}

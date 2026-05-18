@@ -8,13 +8,16 @@ import { MAX_REWARD_PER_MONTH } from '@/lib/conditions'
 
 // 특정 user의 보상 내역 전체 조회 (최신순)
 // tier_at_reward: 지급 당시 티어 스냅샷 (현재 티어 바뀌어도 과거 기록 유지)
+// trigger_type: trigger_logs JOIN으로 노출 — 마이페이지 트리거별 집계용
 export async function getRewardsByUserId(userId: number): Promise<RewardRow[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, user_id, trigger_log_id, amount, tier_at_reward,
-            reward_year, reward_month, rewarded_at
-     FROM reward_logs
-     WHERE user_id = ?
-     ORDER BY rewarded_at DESC`,
+    `SELECT r.id, r.user_id, r.trigger_log_id, t.trigger_type,
+            r.amount, r.tier_at_reward,
+            r.reward_year, r.reward_month, r.rewarded_at
+     FROM reward_logs r
+     JOIN trigger_logs t ON t.id = r.trigger_log_id
+     WHERE r.user_id = ?
+     ORDER BY r.rewarded_at DESC`,
     [userId]
   )
   return rows as RewardRow[]

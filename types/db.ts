@@ -41,10 +41,19 @@ export type PaymentRow = {
   paid_at: Date
 }
 
+export type TriggerType =
+  | 'rain'
+  | 'heat'
+  | 'cold'
+  | 'snow'
+  | 'dust'
+  | 'good_weather'
+
 export type RewardRow = {
   id: number
   user_id: number
   trigger_log_id: number
+  trigger_type: TriggerType
   amount: number
   tier_at_reward: 'basic' | 'standard' | 'premium'
   reward_year: number
