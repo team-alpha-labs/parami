@@ -33,7 +33,7 @@ export async function Header() {
         </Link>
 
         <div className="flex items-center gap-4">
-          {/* native <a href="/#explore"> — Next.js <Link>의 hash navigation 불안정 우회 패턴 */}
+          {/* hash 앵커는 Next.js <Link>로 — lint 룰 (@next/next/no-html-link-for-pages) 준수 */}
           <nav className="hidden items-center gap-4 md:flex">
             {isLoggedIn && (
               <Link href="/home" className="text-sm font-medium text-foreground hover:text-primary">
@@ -45,9 +45,9 @@ export async function Header() {
                 관리자
               </Link>
             )}
-            <a href="/#explore" className="text-sm font-medium text-foreground hover:text-primary">
+            <Link href="/#explore" className="text-sm font-medium text-foreground hover:text-primary">
               상품
-            </a>
+            </Link>
             <Link href="/pricing" className="text-sm font-medium text-foreground hover:text-primary">
               요금제
             </Link>
