@@ -3,8 +3,43 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/client'
-import type { AdminUserRow } from '@/lib/queries/admin'
 import { Search, Mail } from 'lucide-react'
+
+// 우석이 추가한 필드 포함한 타입
+type AdminUserRow = {
+  id: number
+  email: string
+  name: string
+  role: 'user' | 'admin'
+  balance: number
+  created_at: Date
+  tier: 'basic' | 'standard' | 'premium' | null
+  status: 'active' | 'cancelled' | 'expired' | null
+  cancelled_at: Date | null
+}
+
+// 플랜 한글 변환
+const TIER_LABEL: Record<string, string> = {
+  basic: '베이직',
+  standard: '스탠다드',
+  premium: '프리미엄',
+}
+
+// 상태 배지
+function StatusBadge({ status }: { status: string | null }) {
+  if (!status) return <span className="text-muted-foreground text-xs">—</span>
+  const map: Record<string, { label: string; className: string }> = {
+    active: { label: '활성', className: 'bg-success/10 text-success' },
+    cancelled: { label: '해지', className: 'bg-muted text-muted-foreground' },
+    expired: { label: '만료', className: 'bg-destructive/10 text-destructive' },
+  }
+  const badge = map[status] ?? { label: status, className: 'bg-muted text-muted-foreground' }
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}>
+      {badge.label}
+    </span>
+  )
+}
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
@@ -37,21 +72,13 @@ export default function AdminUsersPage() {
         />
       </div>
 
-      {/* 로딩 상태 */}
       {isLoading && (
-        <div className="text-center py-12 text-muted-foreground text-sm">
-          불러오는 중...
-        </div>
+        <div className="text-center py-12 text-muted-foreground text-sm">불러오는 중...</div>
       )}
-
-      {/* 에러 상태 */}
       {error && (
-        <div className="text-center py-12 text-destructive text-sm">
-          데이터를 불러오지 못했습니다.
-        </div>
+        <div className="text-center py-12 text-destructive text-sm">데이터를 불러오지 못했습니다.</div>
       )}
 
-      {/* 테이블 */}
       {!isLoading && !error && (
         <div className="overflow-x-auto bg-background rounded-xl border">
           <table className="w-full text-sm">
@@ -59,17 +86,16 @@ export default function AdminUsersPage() {
               <tr className="border-b text-muted-foreground">
                 <th className="text-left px-6 py-3 font-medium">ID</th>
                 <th className="text-left px-6 py-3 font-medium">이메일</th>
-                <th className="text-left px-6 py-3 font-medium">이름</th>
-                <th className="text-left px-6 py-3 font-medium">누적 보상</th>
+                <th className="text-left px-6 py-3 font-medium">플랜</th>
+                <th className="text-left px-6 py-3 font-medium">상태</th>
                 <th className="text-left px-6 py-3 font-medium">가입일</th>
+                <th className="text-left px-6 py-3 font-medium">해지일</th>
+                <th className="text-left px-6 py-3 font-medium">누적 보상</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((user) => (
-                <tr
-                  key={user.id}
-                  className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                >
+                <tr key={user.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="px-6 py-4 text-muted-foreground">{user.id}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -77,12 +103,22 @@ export default function AdminUsersPage() {
                       {user.email}
                     </div>
                   </td>
-                  <td className="px-6 py-4">{user.name}</td>
-                  <td className="px-6 py-4 font-medium text-primary">
-                    {user.balance.toLocaleString()}원
+                  <td className="px-6 py-4">
+                    {user.tier ? TIER_LABEL[user.tier] : '—'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={user.status} />
                   </td>
                   <td className="px-6 py-4 text-muted-foreground">
                     {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                  </td>
+                  <td className="px-6 py-4 text-muted-foreground">
+                    {user.cancelled_at
+                      ? new Date(user.cancelled_at).toLocaleDateString('ko-KR')
+                      : '—'}
+                  </td>
+                  <td className="px-6 py-4 font-medium text-primary">
+                    {user.balance.toLocaleString()}원
                   </td>
                 </tr>
               ))}
