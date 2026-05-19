@@ -5,7 +5,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Zap, Gift, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, Zap, Gift, CreditCard, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const MENU = [
@@ -14,6 +14,7 @@ const MENU = [
   { href: '/admin/triggers', label: '트리거 내역', icon: Zap },
   { href: '/admin/rewards', label: '보상 내역', icon: Gift },
   { href: '/admin/payments', label: '결제 내역', icon: CreditCard },
+  { href: '/admin/withdrawals', label: '출금 내역', icon: Wallet },
 ] as const
 
 export function AdminSidebar() {

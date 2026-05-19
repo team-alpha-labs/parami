@@ -122,3 +122,15 @@ CREATE TABLE reward_logs (
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (trigger_log_id) REFERENCES trigger_logs(id)
 );
+
+-- 포인트 출금 audit log
+-- MVP는 실제 송금 미구현 — users.balance 차감과 함께 기록만 남김 (관리자 조회용)
+CREATE TABLE withdrawal_logs (
+  id           INT      NOT NULL AUTO_INCREMENT,
+  user_id      INT      NOT NULL,
+  amount       INT      NOT NULL,
+  withdrawn_at DATETIME NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id),
+  KEY idx_user_withdrawn (user_id, withdrawn_at),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
