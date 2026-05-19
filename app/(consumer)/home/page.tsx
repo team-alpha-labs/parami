@@ -1,8 +1,25 @@
 'use client'
 
+// /home — 로그인 직후 진입 디폴트 페이지
+// 시안 2 레이아웃:
+//   [grid-cols-2] 캘린더 | 이번 달 보상금 + [날씨/보상] 2분할
+//   [전폭]               최근 알림
+//   [전폭]               7일 예보 (lucide 아이콘 + trigger 토큰 색)
+// 박스 외곽선/그림자: border-border/50 + shadow-sm (마이페이지 표준 일관)
+
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { Cloud, Gift, ArrowRight, CheckCircle, AlertTriangle, Info } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle,
+  Cloud,
+  CloudRain,
+  CloudSun,
+  Gift,
+  Info,
+  Sun,
+} from 'lucide-react'
 import { api } from '@/lib/client'
 import { useMe } from '@/hooks/use-me'
 import { Button } from '@/components/ui/button'
@@ -59,16 +76,20 @@ const DUMMY_ALERTS = [
   },
 ]
 
-// 더미 7일 예보 데이터
+// 더미 7일 예보 — lucide 아이콘 + trigger 토큰 색 (마이페이지/날씨 페이지 일관)
+// icon은 lucide 컴포넌트 직접 참조 (이모지 X)
 const DUMMY_FORECAST = [
-  { day: '오늘', icon: '☀️', temp: 21, trigger: true },
-  { day: '금', icon: '🌧️', temp: 18, trigger: true },
-  { day: '토', icon: '⛅', temp: 20, trigger: false },
-  { day: '일', icon: '☀️', temp: 24, trigger: false },
-  { day: '월', icon: '☀️', temp: 27, trigger: false },
-  { day: '화', icon: '☀️', temp: 31, trigger: false },
-  { day: '수', icon: '⛅', temp: 26, trigger: false },
+  { day: '오늘', Icon: Sun, iconColor: 'text-trigger-heat', temp: 21, trigger: true },
+  { day: '금', Icon: CloudRain, iconColor: 'text-trigger-rain', temp: 18, trigger: true },
+  { day: '토', Icon: CloudSun, iconColor: 'text-muted-foreground', temp: 20, trigger: false },
+  { day: '일', Icon: Sun, iconColor: 'text-trigger-heat', temp: 24, trigger: false },
+  { day: '월', Icon: Sun, iconColor: 'text-trigger-heat', temp: 27, trigger: false },
+  { day: '화', Icon: Sun, iconColor: 'text-trigger-heat', temp: 31, trigger: false },
+  { day: '수', Icon: CloudSun, iconColor: 'text-muted-foreground', temp: 26, trigger: false },
 ]
+
+// 박스 표준 클래스 (마이페이지 표준과 일관)
+const BOX = 'rounded-lg border border-border/50 bg-background p-6 shadow-sm'
 
 export default function HomePage() {
   const { data: me } = useMe()
@@ -113,11 +134,10 @@ export default function HomePage() {
   const thisMonthCount = summary?.thisMonthCount ?? 0
   const progressPct = Math.min((thisMonthCount / MAX_REWARD_PER_MONTH) * 100, 100)
 
-  // 트리거 가능 일수 (더미)
   const triggerPossibleDays = DUMMY_FORECAST.filter((d) => d.trigger).length
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
       {/* 인사 헤더 */}
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
@@ -145,59 +165,86 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 캘린더 + 이번 달 카드 */}
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+      {/* 상단: 캘린더 | (이번 달 보상금 + 바로가기 2분할) */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <RewardCalendar rewards={calendarRewards} />
 
-        <div className="rounded-lg border bg-background p-6">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-foreground">이번 달 보상금</p>
-            <p className="text-xs text-muted-foreground">
-              {thisYear}. {String(thisMonth).padStart(2, '0')}
+        <div className="flex flex-col gap-6">
+          {/* 이번 달 보상금 박스 */}
+          <div className={BOX}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">이번 달 보상금</p>
+              <p className="text-xs text-muted-foreground">
+                {thisYear}. {String(thisMonth).padStart(2, '0')}
+              </p>
+            </div>
+            <p className="mt-4 text-4xl font-bold text-primary">
+              {thisMonthAmount.toLocaleString()}
+              <span className="ml-1 text-base font-normal text-muted-foreground">원</span>
             </p>
-          </div>
-          <p className="mt-4 text-4xl font-bold text-primary">
-            {thisMonthAmount.toLocaleString()}
-            <span className="ml-1 text-base font-normal text-muted-foreground">원</span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            누적 {summary?.totalCount ?? 0}회 · {(summary?.totalAmount ?? 0).toLocaleString()}원
-          </p>
-
-          {/* 월 한도 진행도 */}
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>월 한도 진행도</span>
-              <span>{thisMonthCount} / {MAX_REWARD_PER_MONTH}회</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {thisMonthAmount.toLocaleString()}원
+              누적 {summary?.totalCount ?? 0}회 · {(summary?.totalAmount ?? 0).toLocaleString()}원
             </p>
+
+            {/* 월 한도 진행도 */}
+            <div className="mt-4">
+              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                <span>월 한도 진행도</span>
+                <span>
+                  {thisMonthCount} / {MAX_REWARD_PER_MONTH}회
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {thisMonthAmount.toLocaleString()}원
+              </p>
+            </div>
+
+            <Button asChild className="mt-6 w-full">
+              <Link href="/mypage">
+                마이페이지로 <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
 
-          <Button asChild className="mt-6 w-full">
-            <Link href="/mypage">
-              마이페이지로 <ArrowRight className="ml-1 h-4 w-4" />
+          {/* 바로가기 — 2분할 가로 (이번 달 보상금 박스 아래) */}
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href="/weather"
+              className={`${BOX} flex flex-col gap-1 transition-colors hover:bg-muted/50`}
+            >
+              <Cloud className="h-5 w-5 text-primary" />
+              <p className="text-sm font-semibold text-foreground">날씨 현황</p>
+              <p className="text-xs text-muted-foreground">
+                {weather?.temp_c != null ? `현재 ${weather.temp_c}°C` : '실시간 모니터링'}
+              </p>
             </Link>
-          </Button>
+            <Link
+              href="/rewards"
+              className={`${BOX} flex flex-col gap-1 transition-colors hover:bg-muted/50`}
+            >
+              <Gift className="h-5 w-5 text-success" />
+              <p className="text-sm font-semibold text-foreground">보상 내역</p>
+              <p className="text-xs text-muted-foreground">지급된 보상 확인</p>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* 최근 알림 */}
-      <div className="mt-6 rounded-lg border bg-background p-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* 최근 알림 (전폭) — 관리자 테이블 톤(bg-muted/20 hover)과 일관되게 살짝 회색 */}
+      <div className="rounded-lg border border-border/50 bg-muted/30 p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-semibold text-foreground">최근 알림</p>
           <Link href="/rewards" className="text-xs text-primary hover:underline">
             전체 보기 →
           </Link>
         </div>
-        <div className="flex flex-col divide-y">
+        <div className="flex flex-col divide-y divide-border/40">
           {DUMMY_ALERTS.map((alert) => (
             <div key={alert.id} className="flex items-start gap-3 py-3">
               <div className="mt-0.5 shrink-0">
@@ -221,58 +268,40 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 7일 예보 + 바로가기 */}
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* 7일 예보 */}
-        <div className="md:col-span-2 rounded-lg border bg-background p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-foreground">
-              7일 예보 · 서울특별시
-            </p>
-            <span className="text-xs text-primary">
-              트리거 가능 {triggerPossibleDays}일
-            </span>
-          </div>
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {DUMMY_FORECAST.map((d) => (
+      {/* 7일 예보 (전폭) — lucide 아이콘 + trigger 토큰 색 */}
+      <div className={BOX}>
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">
+            7일 예보 · 서울특별시
+          </p>
+          <span className="text-xs text-primary">
+            트리거 가능 {triggerPossibleDays}일
+          </span>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {DUMMY_FORECAST.map((d) => {
+            const Icon = d.Icon
+            return (
               <div key={d.day} className="flex flex-col items-center gap-1">
-                <p className={`text-xs font-medium ${d.day === '오늘' ? 'text-primary' : 'text-muted-foreground'}`}>
+                <p
+                  className={`text-xs font-medium ${
+                    d.day === '오늘' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
                   {d.day}
                 </p>
-                <span className="text-xl">{d.icon}</span>
+                <Icon className={`h-6 w-6 ${d.iconColor}`} aria-hidden />
                 <p className="text-xs text-foreground">{d.temp}°</p>
                 {d.trigger && (
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                 )}
               </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            파란 점은 트리거 발동 가능성이 높은 날입니다. 기상청 단기예보 기준 자동 계산.
-          </p>
+            )
+          })}
         </div>
-
-        {/* 바로가기 */}
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/weather"
-            className="flex flex-col gap-1 rounded-lg border bg-background p-4 transition-colors hover:bg-muted/50"
-          >
-            <Cloud className="h-5 w-5 text-primary" />
-            <p className="text-sm font-semibold text-foreground">날씨 현황</p>
-            <p className="text-xs text-muted-foreground">
-              {weather?.temp_c != null ? `현재 ${weather.temp_c}°C` : '실시간 모니터링'}
-            </p>
-          </Link>
-          <Link
-            href="/rewards"
-            className="flex flex-col gap-1 rounded-lg border bg-background p-4 transition-colors hover:bg-muted/50"
-          >
-            <Gift className="h-5 w-5 text-success" />
-            <p className="text-sm font-semibold text-foreground">보상 내역</p>
-            <p className="text-xs text-muted-foreground">지급된 보상 확인</p>
-          </Link>
-        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          파란 점은 트리거 발동 가능성이 높은 날입니다. 기상청 단기예보 기준 자동 계산.
+        </p>
       </div>
     </div>
   )
