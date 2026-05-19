@@ -19,3 +19,13 @@ export function getKstYearMonth(d: Date): { year: number; month: number } {
     month: kst.getUTCMonth() + 1,
   }
 }
+
+// KST 기준 YYYY-MM-DD. 일 1회 캡 비교에 사용.
+// trigger 발동 시각을 KST로 옮긴 후 날짜만 추출 — UTC 자정 케이스에 영향 없음.
+export function getKstDateString(d: Date): string {
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+  const y = kst.getUTCFullYear()
+  const m = String(kst.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(kst.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}

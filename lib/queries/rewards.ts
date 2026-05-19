@@ -99,16 +99,17 @@ export async function getEligibleUsersForReward(): Promise<RewardEligibleRow[]> 
   return rows as RewardEligibleRow[]
 }
 
-// 보상 지급 단일 트랜잭션 (월 캡 포함):
+// 보상 지급 단일 트랜잭션 (일·월 캡 포함):
 //   1) SELECT users FOR UPDATE        — 같은 유저 동시 호출 직렬화
-//   2) 월 보상 횟수 카운트 → MAX_REWARD_PER_MONTH 초과면 capped
-//   3) reward_logs INSERT IGNORE       (UNIQUE(user_id, trigger_log_id) → already_paid)
-//   4) users.balance += amount
+//   2) 일 보상 횟수 카운트 → 1건 이상이면 daily_capped (하루 1번 정책)
+//   3) 월 보상 횟수 카운트 → MAX_REWARD_PER_MONTH 초과면 capped
+//   4) reward_logs INSERT IGNORE       (UNIQUE(user_id, trigger_log_id) → already_paid)
+//   5) users.balance += amount
 //
-// 캡 체크가 트랜잭션 밖에 있으면 동시 호출 시 같은 유저가 월 10회 초과 지급될 수 있음.
+// 캡 체크가 트랜잭션 밖에 있으면 동시 호출 시 같은 유저가 캡 초과 지급될 수 있음.
 // users 행 X-lock으로 같은 user_id에 대한 보상 처리를 한 번에 하나로 직렬화 → race 차단.
 // 서로 다른 유저는 락이 분리되므로 병렬 처리 영향 없음.
-export type PayoutOutcome = 'paid' | 'capped' | 'already_paid'
+export type PayoutOutcome = 'paid' | 'capped' | 'daily_capped' | 'already_paid'
 
 export async function payoutReward(args: {
   user_id: number
@@ -117,6 +118,8 @@ export async function payoutReward(args: {
   tier: Tier
   year: number
   month: number
+  // KST 기준 YYYY-MM-DD. 일 1회 캡 비교에 사용 (rewarded_at은 UTC라 직접 DATE() 못 씀)
+  kstDate: string
 }): Promise<{ outcome: PayoutOutcome }> {
   const conn = await pool.getConnection()
   try {
@@ -134,7 +137,20 @@ export async function payoutReward(args: {
       throw new Error(`user not found: ${args.user_id}`)
     }
 
-    // 2) 락 획득 후 월 보상 횟수 카운트
+    // 2) 락 획득 후 일 보상 횟수 카운트 (KST 기준 1회 정책)
+    // rewarded_at은 UTC라 CONVERT_TZ로 KST 변환 후 DATE() 비교
+    const [dayRows] = await conn.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS cnt FROM reward_logs
+       WHERE user_id = ?
+         AND DATE(CONVERT_TZ(rewarded_at, '+00:00', '+09:00')) = ?`,
+      [args.user_id, args.kstDate],
+    )
+    if (Number(dayRows[0].cnt) >= 1) {
+      await conn.rollback()
+      return { outcome: 'daily_capped' }
+    }
+
+    // 3) 월 보상 횟수 카운트
     // 락을 잡고 있는 동안 다른 트랜잭션이 같은 유저 reward_logs를 INSERT할 수 없으므로
     // 여기서 본 카운트가 INSERT 직전까지 유효
     const [cntRows] = await conn.query<RowDataPacket[]>(
@@ -147,7 +163,7 @@ export async function payoutReward(args: {
       return { outcome: 'capped' }
     }
 
-    // 3) INSERT IGNORE: 같은 user_id+trigger_log_id 조합이 이미 있으면 조용히 스킵
+    // 4) INSERT IGNORE: 같은 user_id+trigger_log_id 조합이 이미 있으면 조용히 스킵
     // (스케줄러 재시도로 같은 트리거를 두 번 처리해도 잔액이 두 번 늘지 않음)
     const [ins] = await conn.execute<ResultSetHeader>(
       `INSERT IGNORE INTO reward_logs
