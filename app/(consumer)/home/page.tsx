@@ -67,6 +67,7 @@ export default function HomePage() {
   const calendarRewards: CalendarReward[] = (rewards ?? []).map((r) => ({
     amount: r.amount,
     rewarded_at: r.rewarded_at,
+    trigger_type: r.trigger_type,
   }))
 
   return (
