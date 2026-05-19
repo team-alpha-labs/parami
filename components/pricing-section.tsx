@@ -129,7 +129,7 @@ export function PricingSection() {
         요금제 선택
       </h2>
       <p className="mt-3 text-center text-sm text-muted-foreground">
-        내게 맞는 보험 플랜을 선택하세요
+        나에게 맞는 플랜을 골라 보세요
       </p>
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6 md:items-stretch">
