@@ -29,14 +29,14 @@ export default function AdminWithdrawalsPage() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">총 출금 건수</p>
           <p className="text-3xl font-bold">
             {totalCount}
             <span className="text-base font-normal text-muted-foreground ml-1">건</span>
           </p>
         </div>
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">총 출금액</p>
           <p className="text-3xl font-bold">
             {totalAmount.toLocaleString()}
@@ -45,7 +45,7 @@ export default function AdminWithdrawalsPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-background w-full max-w-lg mb-6">
+      <div className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 bg-background w-full max-w-lg mb-6">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input
           type="text"
@@ -64,10 +64,10 @@ export default function AdminWithdrawalsPage() {
       )}
 
       {!isLoading && !error && (
-        <div className="overflow-x-auto bg-background rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border border-border bg-muted/50">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left px-6 py-3 font-medium">ID</th>
                 <th className="text-left px-6 py-3 font-medium">유저</th>
                 <th className="text-left px-6 py-3 font-medium">출금액</th>
@@ -76,7 +76,7 @@ export default function AdminWithdrawalsPage() {
             </thead>
             <tbody>
               {filtered.map((w) => (
-                <tr key={w.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                <tr key={w.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="px-6 py-4 text-muted-foreground">{w.id}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">

@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
           {/* 최근 활동 + 구독 분포 */}
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* 최근 활동 */}
-            <div className="rounded-lg border bg-background p-6">
+            <div className="rounded-lg border border-border/50 bg-background p-6 shadow-sm">
               <p className="text-sm font-semibold text-foreground">최근 활동</p>
 
               {data.recent.length === 0 ? (
@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* 구독 분포 */}
-            <div className="rounded-lg border bg-background p-6">
+            <div className="rounded-lg border border-border/50 bg-background p-6 shadow-sm">
               <p className="text-sm font-semibold text-foreground">구독 분포</p>
 
               {data.distribution.length === 0 ? (
@@ -227,7 +227,7 @@ function StatCard({
   const positive = change != null && change >= 0
 
   return (
-    <div className="rounded-lg border bg-background p-5">
+    <div className="rounded-lg border border-border/50 bg-background p-5 shadow-sm">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="h-4 w-4" />
         {label}
