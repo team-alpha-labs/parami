@@ -138,11 +138,15 @@ export async function payoutReward(args: {
     }
 
     // 2) 락 획득 후 일 보상 횟수 카운트 (KST 기준 1회 정책)
-    // rewarded_at은 UTC라 CONVERT_TZ로 KST 변환 후 DATE() 비교
+    // 기준: trigger_logs.triggered_date (KST DATE, 트리거 발동 날짜)
+    // rewarded_at(=INSERT 시각)이 아니라 트리거 발생일을 기준으로 세야 자정 직후
+    // "어제 측정값으로 발동한 트리거"가 같은 호출에서 여러 개 처리될 때도
+    // 두 번째부터 정확히 daily_capped 됨.
     const [dayRows] = await conn.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS cnt FROM reward_logs
-       WHERE user_id = ?
-         AND DATE(CONVERT_TZ(rewarded_at, '+00:00', '+09:00')) = ?`,
+      `SELECT COUNT(*) AS cnt
+       FROM reward_logs r
+       JOIN trigger_logs t ON t.id = r.trigger_log_id
+       WHERE r.user_id = ? AND t.triggered_date = ?`,
       [args.user_id, args.kstDate],
     )
     if (Number(dayRows[0].cnt) >= 1) {
