@@ -4,7 +4,11 @@ import { fetchWeatherSnapshot } from '@/lib/weather'
 import { insertWeatherLog } from '@/lib/queries/weather'
 import { evaluateTriggers, toKstDateString } from '@/lib/triggers'
 import { insertTriggerLog } from '@/lib/queries/triggers'
-import { getRewardAmount, getKstYearMonth } from '@/lib/rewards'
+import {
+  getRewardAmount,
+  getKstYearMonth,
+  getKstDateString,
+} from '@/lib/rewards'
 import {
   getEligibleUsersForReward,
   payoutReward,
@@ -101,23 +105,26 @@ function isAuthorized(request: NextRequest): boolean {
 
 // 한 트리거에 대해 자격 있는 유저들에게 순차로 보상 지급
 // - 한 유저의 트랜잭션 실패가 다른 유저 지급을 막지 않도록 try/catch로 격리
-// - 월 캡 체크 + INSERT + balance 증감은 payoutReward 한 트랜잭션 안에서
+// - 일·월 캡 체크 + INSERT + balance 증감은 payoutReward 한 트랜잭션 안에서
 //   users 행 X-lock으로 직렬화됨 (Cloud Scheduler at-least-once 재시도나
-//   수동 중복 호출에도 월 10회 초과 차단)
+//   수동 중복 호출에도 캡 초과 차단)
 async function payoutForTrigger(
   trigger_log_id: number,
   measured_at: Date,
 ): Promise<{
   paid: number
   capped: number
+  daily_capped: number
   already_paid: number
   failed: number
 }> {
   const { year, month } = getKstYearMonth(measured_at)
+  const kstDate = getKstDateString(measured_at)
   const eligible = await getEligibleUsersForReward()
 
   let paid = 0
   let capped = 0
+  let daily_capped = 0
   let already_paid = 0
   let failed = 0
 
@@ -131,9 +138,11 @@ async function payoutForTrigger(
         tier: u.tier,
         year,
         month,
+        kstDate,
       })
       if (r.outcome === 'paid') paid++
       else if (r.outcome === 'capped') capped++
+      else if (r.outcome === 'daily_capped') daily_capped++
       else already_paid++
     } catch (e) {
       console.error(
@@ -144,5 +153,5 @@ async function payoutForTrigger(
     }
   }
 
-  return { paid, capped, already_paid, failed }
+  return { paid, capped, daily_capped, already_paid, failed }
 }
