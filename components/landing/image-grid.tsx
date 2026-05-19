@@ -58,7 +58,7 @@ function Message({ className }: { className?: string }) {
   return (
     <div className={`flex items-center ${className ?? ''}`}>
       <h2 className="text-3xl font-bold leading-tight text-foreground md:text-5xl">
-        날씨에 맞추어
+        날씨에 맞춰
         <br />
         보상금과 혜택이 쏟아져요
       </h2>

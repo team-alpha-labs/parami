@@ -19,7 +19,7 @@ export function CtaExplore() {
           Parami
         </h2>
         <p className="mt-4 text-base text-muted-foreground md:mt-6 md:text-lg">
-          날씨보험의 새 패러다임, Parami
+          날씨 보험의 새 기준, Parami
         </p>
 
         <div className="mt-8 flex flex-col items-stretch justify-center gap-3 md:mt-12 md:flex-row md:items-center">

@@ -85,10 +85,10 @@ export function TriggerCards() {
           보상 조건
         </p>
         <h2 className="mt-2 text-2xl font-bold leading-tight text-foreground md:text-4xl">
-          어떤 날씨에 보상이 발동될까요?
+          어떤 날씨에 보상이 들어올까요?
         </h2>
         <p className="mt-4 text-base text-muted-foreground md:text-lg">
-          기상청 공식 API가 조건을 자동으로 감지해요. 신청 없이 자동으로 들어와요.
+          기상청이 조건을 자동으로 감지해요. 신청 없이 자동으로 들어와요.
         </p>
       </div>
 

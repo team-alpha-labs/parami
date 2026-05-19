@@ -86,7 +86,7 @@ export function MonthlyTriggerChart() {
                 fontSize: '12px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               }}
-              formatter={(value) => [`${Number(value ?? 0).toFixed(1)}회`, '월 평균 지급']}
+              formatter={(value) => [`${Number(value ?? 0).toFixed(1)}회`, '월 평균 보상']}
             />
             {/* 10회 상한 라인 — 캡 시각화 */}
             <ReferenceLine
