@@ -27,7 +27,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster position="top-center" richColors closeButton />
+      {/*
+        toastOptions:
+        - style.width 'auto': sonner 기본 고정 폭(356px) 무력화 — 텍스트 길이에 맞춤
+          (sonner가 인라인 CSS 변수로 폭 설정해서 Tailwind w-fit으론 override 안 됨)
+        - classNames.toast 'whitespace-nowrap': 줄바꿈 방지 (텍스트 한 줄 유지)
+        - classNames.title 'text-center w-full': 본문 텍스트 가운데 정렬
+      */}
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{
+          style: { width: 'auto' },
+          classNames: {
+            toast: 'whitespace-nowrap',
+            title: 'text-center w-full',
+          },
+        }}
+      />
     </QueryClientProvider>
   )
 }

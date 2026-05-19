@@ -53,7 +53,7 @@ export function WithdrawModal({
   const withdraw = useMutation({
     mutationFn: () => api.delete('/api/auth/withdraw'),
     onSuccess: () => {
-      toast.success('회원 탈퇴가 완료됐어요.')
+      toast.success('탈퇴를 완료했어요.')
       // 탈퇴 후 같은 브라우저에서 다른 계정 재로그인 시 이전 데이터 잔존 방지
       queryClient.clear()
       onOpenChange(false)
@@ -62,7 +62,7 @@ export function WithdrawModal({
       router.refresh()
     },
     onError: (e) => {
-      const msg = e instanceof ApiError ? e.message : '회원 탈퇴에 실패했어요.'
+      const msg = e instanceof ApiError ? e.message : '탈퇴하지 못했어요.'
       toast.error(msg)
     },
   })

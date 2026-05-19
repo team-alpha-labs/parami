@@ -66,11 +66,11 @@ export function PricingSection() {
     mutationFn: (newTier: Tier) =>
       api.patch('/api/subscriptions/change-tier', { newTier }),
     onSuccess: () => {
-      toast.success('티어 변경이 예약됐어요. 다음 결제 시점에 적용됩니다.')
+      toast.success('티어 변경을 예약했어요. 다음 결제일에 바뀌어요.')
       queryClient.invalidateQueries({ queryKey: ['subscriptions', 'me'] })
     },
     onError: (e) => {
-      const msg = e instanceof ApiError ? e.message : '티어 변경에 실패했어요.'
+      const msg = e instanceof ApiError ? e.message : '티어를 변경하지 못했어요.'
       toast.error(msg)
     },
   })
