@@ -17,7 +17,7 @@
 import Image from 'next/image'
 import { FadeUp } from '@/components/motion/fade-up'
 
-interface PhotoProps {  
+interface PhotoProps {
   src: string
   caption: string
   sub: string
