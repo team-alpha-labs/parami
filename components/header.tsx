@@ -20,7 +20,8 @@ export async function Header() {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <Link href={isLoggedIn ? '/home' : '/'} className="flex items-center gap-0">
+        {/* 로고 클릭은 로그인 여부 관계없이 항상 랜딩(/)으로 — 브랜드 진입점 일관성 */}
+        <Link href="/" className="flex items-center gap-0">
           <Image
             src="/images/logo-duck.png"
             alt=""
