@@ -1,18 +1,21 @@
 'use client'
 
 // 보상 캘린더 — 월 단위 그리드, 보상 받은 날 표시
-// 사용처: /home (이번 달 요약), /rewards (월 이동 가능)
-// rewards에 trigger_type이 없어 (reward_logs는 trigger_log_id로만 연결)
-// 디자인의 트리거 타입별 색 도트는 후속 작업 — 현재는 일 합계만 표시
+// 사용처: /home (이번 달 요약), /rewards (월 이동 + 트리거별 색 도트 + 레전드)
+// 트리거 도트 색: 디자인 토큰 (bg-trigger-*), 시안의 6종(rain/heat/cold/snow/dust/good_weather)
+// 같은 날 여러 트리거가 있으면 첫 트리거의 색만 도트로 노출 (캘린더는 요약,
+//   정확한 분해는 /rewards 상세 테이블에서)
 
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import type { TriggerType } from '@/types/db'
 
 export type CalendarReward = {
   amount: number
   rewarded_at: string | Date
+  trigger_type: TriggerType
 }
 
 type Props = {
@@ -22,6 +25,16 @@ type Props = {
 }
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const
+
+// 트리거 도트 색 (§6 TriggerCards COLOR_MAP / 마이페이지 패턴과 일관)
+const TRIGGER_DOT_BG: Record<TriggerType, string> = {
+  rain: 'bg-trigger-rain',
+  heat: 'bg-trigger-heat',
+  cold: 'bg-trigger-cold',
+  snow: 'bg-trigger-snow',
+  dust: 'bg-trigger-dust',
+  good_weather: 'bg-trigger-good',
+}
 
 // react-hooks/purity 룰 우회 — 모듈 레벨 헬퍼로 Date.now 호출 격리
 function getKstNow() {
@@ -37,16 +50,20 @@ export function RewardCalendar({ rewards, initialYear, initialMonth }: Props) {
   const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
 
-  // 일자별 보상 합계 맵
-  const dailyTotals = new Map<number, number>()
+  // 일자별 보상 합계 + 첫 트리거 (도트 색용)
+  const dailyInfo = new Map<number, { amount: number; trigger_type: TriggerType }>()
   for (const r of rewards) {
     const d = new Date(r.rewarded_at)
     if (d.getFullYear() === year && d.getMonth() + 1 === month) {
       const day = d.getDate()
-      dailyTotals.set(day, (dailyTotals.get(day) ?? 0) + r.amount)
+      const existing = dailyInfo.get(day)
+      dailyInfo.set(day, {
+        amount: (existing?.amount ?? 0) + r.amount,
+        trigger_type: existing?.trigger_type ?? r.trigger_type, // 첫 트리거 유지
+      })
     }
   }
-  const monthTotal = [...dailyTotals.values()].reduce((s, v) => s + v, 0)
+  const monthTotal = [...dailyInfo.values()].reduce((s, v) => s + v.amount, 0)
 
   const prev = () => {
     if (month === 1) {
@@ -72,7 +89,7 @@ export function RewardCalendar({ rewards, initialYear, initialMonth }: Props) {
   const todayDate = isCurrentMonth ? todayKst.getUTCDate() : -1
 
   return (
-    <div className="rounded-lg border bg-background p-5">
+    <div className="rounded-lg border border-border/50 bg-background p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={prev} aria-label="이전 달">
           <ChevronLeft className="h-4 w-4" />
@@ -103,29 +120,37 @@ export function RewardCalendar({ rewards, initialYear, initialMonth }: Props) {
       <div className="mt-1 grid grid-cols-7 gap-1">
         {cells.map((day, idx) => {
           if (day === null) return <div key={`empty-${idx}`} className="h-14" />
-          const amount = dailyTotals.get(day) ?? 0
+          const info = dailyInfo.get(day)
           const isToday = day === todayDate
           return (
             <div
               key={day}
-              className={cn(
-                'flex h-14 flex-col items-center justify-center rounded-md text-xs',
-                isToday && 'bg-primary/10',
-                amount > 0 && !isToday && 'bg-muted/50',
-              )}
+              className="flex h-14 flex-col items-center justify-center gap-0.5 rounded-md text-xs"
             >
+              {/* 오늘 날짜 강조: 둥근 primary 칩. 그 외엔 일반 텍스트 */}
               <span
                 className={cn(
-                  'text-sm font-medium',
-                  isToday ? 'text-primary' : 'text-foreground',
+                  'flex h-6 w-6 items-center justify-center text-sm',
+                  isToday
+                    ? 'rounded-full bg-primary font-medium text-primary-foreground'
+                    : 'text-foreground',
                 )}
               >
                 {day}
               </span>
-              {amount > 0 && (
-                <span className="text-[10px] font-semibold text-primary">
-                  +{amount.toLocaleString()}
-                </span>
+              {info && (
+                <>
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      TRIGGER_DOT_BG[info.trigger_type],
+                    )}
+                    aria-hidden
+                  />
+                  <span className="text-[10px] font-semibold text-foreground">
+                    +{info.amount.toLocaleString()}
+                  </span>
+                </>
               )}
             </div>
           )
@@ -134,7 +159,7 @@ export function RewardCalendar({ rewards, initialYear, initialMonth }: Props) {
 
       <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs">
         <span className="text-muted-foreground">
-          {month}월 받은 보상 {dailyTotals.size}일
+          {month}월 받은 보상 {dailyInfo.size}일
         </span>
         <span className="font-semibold text-foreground">
           합계 {monthTotal.toLocaleString()}원
