@@ -15,7 +15,7 @@ export function LogoutButton() {
       router.push('/')
       router.refresh()
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : '로그아웃에 실패했어요'
+      const msg = e instanceof ApiError ? e.message : '로그아웃하지 못했어요.'
       toast.error(msg)
     }
   }

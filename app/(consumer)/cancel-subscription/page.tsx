@@ -31,12 +31,12 @@ export default function CancelSubscriptionPage() {
   const cancel = useMutation({
     mutationFn: () => api.patch('/api/subscriptions/cancel'),
     onSuccess: () => {
-      toast.success('구독이 해지됐어요.')
+      toast.success('구독을 해지했어요.')
       queryClient.invalidateQueries({ queryKey: ['subscriptions', 'me'] })
       router.push('/mypage')
     },
     onError: (e) => {
-      const msg = e instanceof ApiError ? e.message : '구독 해지에 실패했어요.'
+      const msg = e instanceof ApiError ? e.message : '구독을 해지하지 못했어요.'
       toast.error(msg)
     },
   })
