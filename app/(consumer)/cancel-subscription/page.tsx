@@ -1,8 +1,7 @@
 'use client'
 
 // /cancel-subscription — active 구독을 cancelled로 전환 (PATCH /api/subscriptions/cancel)
-// 흐름: 주의사항 + 사유 + 동의 체크 → 해지하기 → 토스트 → /mypage
-// 해지 사유는 디자인상 수집만 (백엔드에 저장 필드 없음 — 도입 시 mutation body로 추가)
+// 흐름: 주의사항 + 동의 체크 → 해지하기 → 토스트 → /mypage
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -17,7 +16,6 @@ import { Button } from '@/components/ui/button'
 export default function CancelSubscriptionPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [reason, setReason] = useState('')
   const [agreed, setAgreed] = useState(false)
 
   const { data: me, isLoading: meLoading } = useMe()
@@ -79,28 +77,16 @@ export default function CancelSubscriptionPage() {
         </ul>
       </div>
 
-      {/* 해지 사유 + 동의 */}
+      {/* 동의 체크 */}
       <div className="mt-6 rounded-lg border bg-background p-5">
-        <label htmlFor="reason" className="block text-sm font-medium text-foreground">
-          해지 사유 <span className="text-muted-foreground">(선택사항)</span>
-        </label>
-        <textarea
-          id="reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="서비스 개선을 위해 해지 사유를 알려주세요."
-          rows={4}
-          className="mt-2 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-
-        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-foreground">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
             className="h-4 w-4 cursor-pointer rounded border-input text-primary focus:ring-ring"
           />
-          위 주의사항을 확인했고, 결제 해지에 동의해요.
+          위 주의사항을 확인했고, 해지에 동의해요.
         </label>
       </div>
 
