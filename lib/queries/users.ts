@@ -148,3 +148,25 @@ export async function softDeleteUser(id: number): Promise<void> {
     conn.release()
   }
 }
+
+// 포인트 출금 최소 금액 (KRW)
+export const MIN_WITHDRAW_AMOUNT = 50000
+
+// 포인트 출금 — balance에서 MIN_WITHDRAW_AMOUNT 차감.
+// 조건부 UPDATE 한 방으로 atomic 처리: balance >= 5만원일 때만 차감 성공.
+// 동시 클릭/잔액부족은 affectedRows=0으로 식별 → 음수 balance 불가능.
+export async function withdrawPoints(
+  userId: number,
+): Promise<{ ok: true; balance: number } | { ok: false }> {
+  const [result] = await pool.query<ResultSetHeader>(
+    'UPDATE users SET balance = balance - ? WHERE id = ? AND deleted_at IS NULL AND balance >= ?',
+    [MIN_WITHDRAW_AMOUNT, userId, MIN_WITHDRAW_AMOUNT],
+  )
+  if (result.affectedRows === 0) return { ok: false }
+
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT balance FROM users WHERE id = ?',
+    [userId],
+  )
+  return { ok: true, balance: (rows[0] as { balance: number }).balance }
+}
