@@ -28,20 +28,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {children}
       {/*
-        toastOptions:
-        - style.width 'auto': sonner 기본 고정 폭(356px) 무력화 — 텍스트 길이에 맞춤
-          (sonner가 인라인 CSS 변수로 폭 설정해서 Tailwind w-fit으론 override 안 됨)
-        - classNames.toast 'whitespace-nowrap': 줄바꿈 방지 (텍스트 한 줄 유지)
-        - classNames.title 'text-center w-full': 본문 텍스트 가운데 정렬
+        sonner 내부 구조: <ol data-sonner-toaster>의 자식 <li data-sonner-toast>가
+        position: absolute (node_modules/sonner/dist/styles.css L85).
+        ol의 width와 li의 width 둘 다 `var(--width)`를 쓰는데, 둘을 따로 override하면
+        ol/li 폭 어긋남 → 화면 좌/우 치우침 발생.
+        → 가장 안전: sonner 디폴트 폭(356px) 유지. ol이 left:50% + translateX(-50%)로
+          화면 정중앙 정렬되어 박스 위치는 보장됨. 본문만 가운데 정렬.
       */}
       <Toaster
         position="top-center"
         richColors
         closeButton
         toastOptions={{
-          style: { width: 'auto' },
           classNames: {
-            toast: 'whitespace-nowrap',
             title: 'text-center w-full',
           },
         }}
