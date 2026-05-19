@@ -30,13 +30,6 @@ type WeatherSnapshot = {
   pm10: number | null
 }
 
-// 큰 카드 우측 큰 아이콘 — 현재 날씨로 분기 (snow > rain > 그 외 맑음)
-function pickBigIcon(data: WeatherSnapshot) {
-  if (data.snow) return CloudSnow
-  if ((data.rain_mm ?? 0) > 0) return CloudRain
-  return Sun
-}
-
 // "2026년 5월 18일 월요일" + "오후 2:00" — KST 고정
 function formatDateLong(s: string | undefined) {
   if (!s) return '-'
@@ -118,7 +111,11 @@ export default function WeatherPage() {
   const tempTriggered = heatTriggered || coldTriggered
   const dustTriggered = (data.pm25 ?? 0) >= TRIGGER_CONDITIONS.dust
 
-  const BigIcon = pickBigIcon(data)
+  // 큰 카드 우측 큰 아이콘 — snow > rain > 그 외 맑음
+  // 조건부로 직접 렌더 (변수에 컴포넌트 담아 <BigIcon/>로 쓰면
+  // react-hooks/static-components 룰에 걸림 — 렌더 중 컴포넌트 생성으로 분류)
+  const bigIconClass =
+    'absolute right-6 top-6 h-12 w-12 opacity-90 md:right-8 md:top-8 md:h-16 md:w-16'
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -137,10 +134,13 @@ export default function WeatherPage() {
         </div>
 
         {/* 우측 큰 아이콘 — 현재 날씨 조건 따라 동적 */}
-        <BigIcon
-          className="absolute right-6 top-6 h-12 w-12 opacity-90 md:right-8 md:top-8 md:h-16 md:w-16"
-          aria-hidden
-        />
+        {data.snow ? (
+          <CloudSnow className={bigIconClass} aria-hidden />
+        ) : (data.rain_mm ?? 0) > 0 ? (
+          <CloudRain className={bigIconClass} aria-hidden />
+        ) : (
+          <Sun className={bigIconClass} aria-hidden />
+        )}
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <Stat label="기온" value={fmt(data.temp_c, '°C')} />
