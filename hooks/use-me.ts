@@ -12,6 +12,8 @@ export type Me = {
   email: string
   name: string
   role: 'user' | 'admin'
+  // 보상금 잔액 (KRW) — 출금 가능 금액. /api/rewards/withdraw 호출 시 한도 검증에 사용
+  balance: number
 }
 
 export function useMe() {
