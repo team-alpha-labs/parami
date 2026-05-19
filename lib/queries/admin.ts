@@ -360,3 +360,24 @@ export async function getSubscriptionDistribution(): Promise<SubscriptionDistrib
   )
   return rows.map((r) => ({ tier: r.tier, count: Number(r.count) }))
 }
+
+export type AdminWithdrawalRow = {
+  id: number
+  user_id: number
+  user_email: string
+  user_name: string
+  amount: number
+  withdrawn_at: Date
+}
+
+// 출금 내역 — 최신순, 유저 컨텍스트(이메일/이름) JOIN
+export async function listAllWithdrawals(): Promise<AdminWithdrawalRow[]> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT w.id, w.user_id, u.email AS user_email, u.name AS user_name,
+            w.amount, w.withdrawn_at
+     FROM withdrawal_logs w
+     JOIN users u ON u.id = w.user_id
+     ORDER BY w.withdrawn_at DESC, w.id DESC`,
+  )
+  return rows as AdminWithdrawalRow[]
+}
