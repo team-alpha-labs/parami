@@ -3,7 +3,7 @@
 // .env.local의 DB_* 환경변수로 접속, SELECT만 수행 (읽기 전용)
 //
 // 출력:
-//   - 8개 테이블 존재 여부
+//   - 9개 테이블 존재 여부
 //   - subscriptions의 pending_tier / status ENUM 마이그레이션 반영 여부
 //   - plans 시드 3행 여부
 //   - 테이블별 row 수
@@ -41,6 +41,7 @@ const EXPECTED_TABLES = [
   'weather_logs',
   'trigger_logs',
   'reward_logs',
+  'withdrawal_logs',
 ]
 
 async function main() {
