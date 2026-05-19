@@ -149,7 +149,7 @@ export default function HomePage() {
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         <RewardCalendar rewards={calendarRewards} />
 
-        <div className="rounded-lg border bg-background p-6">
+        <div className="rounded-lg border border-border/50 bg-background p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-foreground">이번 달 보상금</p>
             <p className="text-xs text-muted-foreground">
@@ -190,7 +190,7 @@ export default function HomePage() {
       </div>
 
       {/* 최근 알림 */}
-      <div className="mt-6 rounded-lg border bg-background p-6">
+      <div className="mt-6 rounded-lg border border-border/50 bg-background p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm font-semibold text-foreground">최근 알림</p>
           <Link href="/rewards" className="text-xs text-primary hover:underline">
@@ -224,7 +224,7 @@ export default function HomePage() {
       {/* 7일 예보 + 바로가기 */}
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* 7일 예보 */}
-        <div className="md:col-span-2 rounded-lg border bg-background p-6">
+        <div className="md:col-span-2 rounded-lg border border-border/50 bg-background p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-semibold text-foreground">
               7일 예보 · 서울특별시
@@ -256,7 +256,7 @@ export default function HomePage() {
         <div className="flex flex-col gap-3">
           <Link
             href="/weather"
-            className="flex flex-col gap-1 rounded-lg border bg-background p-4 transition-colors hover:bg-muted/50"
+            className="flex flex-col gap-1 rounded-lg border border-border/50 bg-background p-4 shadow-sm transition-colors hover:bg-muted/50"
           >
             <Cloud className="h-5 w-5 text-primary" />
             <p className="text-sm font-semibold text-foreground">날씨 현황</p>
@@ -266,7 +266,7 @@ export default function HomePage() {
           </Link>
           <Link
             href="/rewards"
-            className="flex flex-col gap-1 rounded-lg border bg-background p-4 transition-colors hover:bg-muted/50"
+            className="flex flex-col gap-1 rounded-lg border border-border/50 bg-background p-4 shadow-sm transition-colors hover:bg-muted/50"
           >
             <Gift className="h-5 w-5 text-success" />
             <p className="text-sm font-semibold text-foreground">보상 내역</p>
