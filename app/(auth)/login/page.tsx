@@ -101,9 +101,9 @@ function LoginInner() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        계정이 없으신가요?{' '}
+        아직 회원이 아닌가요?{' '}
         <Link href="/signup" className="font-medium text-primary hover:underline">
-          회원가입
+          가입하기
         </Link>
       </p>
     </div>
