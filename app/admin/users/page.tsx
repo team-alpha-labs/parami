@@ -61,7 +61,7 @@ export default function AdminUsersPage() {
       </p>
 
       {/* 검색바 */}
-      <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-background w-full max-w-lg mb-6">
+      <div className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 bg-background w-full max-w-lg mb-6">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input
           type="text"
@@ -80,10 +80,10 @@ export default function AdminUsersPage() {
       )}
 
       {!isLoading && !error && (
-        <div className="overflow-x-auto bg-background rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border border-border bg-muted/50">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left px-6 py-3 font-medium">ID</th>
                 <th className="text-left px-6 py-3 font-medium">이메일</th>
                 <th className="text-left px-6 py-3 font-medium">플랜</th>
@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {filtered.map((user) => (
-                <tr key={user.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                <tr key={user.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="px-6 py-4 text-muted-foreground">{user.id}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">

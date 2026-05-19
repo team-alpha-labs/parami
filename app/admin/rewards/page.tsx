@@ -40,21 +40,21 @@ export default function AdminRewardsPage() {
 
       {/* 통계 카드 3개 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">총 지급 건수</p>
           <p className="text-3xl font-bold">
             {totalCount}
             <span className="text-base font-normal text-muted-foreground ml-1">건</span>
           </p>
         </div>
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">총 지급 금액</p>
           <p className="text-3xl font-bold">
             {totalAmount.toLocaleString()}
             <span className="text-base font-normal text-muted-foreground ml-1">원</span>
           </p>
         </div>
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">평균 보상금</p>
           <p className="text-3xl font-bold">
             {avgAmount.toLocaleString()}
@@ -64,7 +64,7 @@ export default function AdminRewardsPage() {
       </div>
 
       {/* 검색바 */}
-      <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-background w-full max-w-lg mb-6">
+      <div className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 bg-background w-full max-w-lg mb-6">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input
           type="text"
@@ -83,10 +83,10 @@ export default function AdminRewardsPage() {
       )}
 
       {!isLoading && !error && (
-        <div className="overflow-x-auto bg-background rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border border-border bg-muted/50">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left px-6 py-3 font-medium">ID</th>
                 <th className="text-left px-6 py-3 font-medium">유저</th>
                 <th className="text-left px-6 py-3 font-medium">트리거</th>
@@ -102,7 +102,7 @@ export default function AdminRewardsPage() {
                   className: 'bg-muted text-muted-foreground',
                 }
                 return (
-                  <tr key={reward.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                  <tr key={reward.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="px-6 py-4 text-muted-foreground">{reward.id}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">

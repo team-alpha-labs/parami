@@ -3,7 +3,16 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/client'
-import { Search } from 'lucide-react'
+import {
+  CloudRain,
+  CloudSnow,
+  HelpCircle,
+  Search,
+  Sparkles,
+  Sun,
+  Thermometer,
+  Wind,
+} from 'lucide-react'
 
 // 우석이 추가한 필드 포함한 타입
 type AdminTriggerRow = {
@@ -20,13 +29,21 @@ type AdminTriggerRow = {
   total_reward_amount: number | null
 }
 
-const TRIGGER_LABEL: Record<string, { emoji: string; name: string }> = {
-  rain: { emoji: '🌧️', name: '강수' },
-  heat: { emoji: '☀️', name: '폭염' },
-  cold: { emoji: '🥶', name: '한파' },
-  snow: { emoji: '❄️', name: '눈' },
-  dust: { emoji: '💨', name: '미세먼지' },
-  good_weather: { emoji: '🌤️', name: '맑은 날' },
+// emoji 대신 lucide 아이콘 + 트리거 컬러 토큰 (랜딩 §6 / mypage 트리거 카드와 동일 매핑)
+const TRIGGER_LABEL: Record<
+  string,
+  { icon: typeof CloudRain; name: string; colorClass: string }
+> = {
+  rain: { icon: CloudRain, name: '강수', colorClass: 'text-trigger-rain' },
+  heat: { icon: Sun, name: '폭염', colorClass: 'text-trigger-heat' },
+  cold: { icon: Thermometer, name: '한파', colorClass: 'text-trigger-cold' },
+  snow: { icon: CloudSnow, name: '눈', colorClass: 'text-trigger-snow' },
+  dust: { icon: Wind, name: '미세먼지', colorClass: 'text-trigger-dust' },
+  good_weather: {
+    icon: Sparkles,
+    name: '맑은 날',
+    colorClass: 'text-trigger-good',
+  },
 }
 
 function getMeasuredValue(trigger: AdminTriggerRow) {
@@ -67,21 +84,21 @@ export default function AdminTriggersPage() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">총 트리거 발동</p>
           <p className="text-3xl font-bold">
             {totalCount}
             <span className="text-base font-normal text-muted-foreground ml-1">회</span>
           </p>
         </div>
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">영향받은 유저</p>
           <p className="text-3xl font-bold">
             {totalAffectedUsers.toLocaleString()}
             <span className="text-base font-normal text-muted-foreground ml-1">명</span>
           </p>
         </div>
-        <div className="bg-background rounded-xl border px-6 py-5">
+        <div className="rounded-lg border border-border/50 bg-background px-6 py-5 shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">총 보상 지급액</p>
           <p className="text-3xl font-bold">
             {totalRewardAmount.toLocaleString()}
@@ -91,7 +108,7 @@ export default function AdminTriggersPage() {
       </div>
 
       {/* 검색바 */}
-      <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-background w-full max-w-lg mb-6">
+      <div className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 bg-background w-full max-w-lg mb-6">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input
           type="text"
@@ -110,10 +127,10 @@ export default function AdminTriggersPage() {
       )}
 
       {!isLoading && !error && (
-        <div className="overflow-x-auto bg-background rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border border-border bg-muted/50">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-muted-foreground">
+              <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left px-6 py-3 font-medium">ID</th>
                 <th className="text-left px-6 py-3 font-medium">트리거 유형</th>
                 <th className="text-left px-6 py-3 font-medium">발동 시각</th>
@@ -124,13 +141,18 @@ export default function AdminTriggersPage() {
             </thead>
             <tbody>
               {filtered.map((trigger) => {
-                const label = TRIGGER_LABEL[trigger.trigger_type] ?? { emoji: '❓', name: trigger.trigger_type }
+                const label = TRIGGER_LABEL[trigger.trigger_type] ?? {
+                  icon: HelpCircle,
+                  name: trigger.trigger_type,
+                  colorClass: 'text-muted-foreground',
+                }
+                const Icon = label.icon
                 return (
-                  <tr key={trigger.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                  <tr key={trigger.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="px-6 py-4 text-muted-foreground">{trigger.id}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span>{label.emoji}</span>
+                        <Icon className={`h-4 w-4 ${label.colorClass}`} aria-hidden />
                         <span>{label.name}</span>
                       </div>
                     </td>
