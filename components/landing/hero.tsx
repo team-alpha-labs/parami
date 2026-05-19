@@ -46,15 +46,15 @@ export function Hero() {
       <div className="absolute inset-0 bg-black/30" aria-hidden />
 
       {/* 텍스트 레이어 */}
-      <div className="relative z-10 flex min-h-[600px] flex-col p-6 text-white md:min-h-[80svh] md:p-12">
-        <h1 className="text-3xl font-extrabold md:text-5xl">비가 오는 날엔</h1>
+      <div className="relative z-10 flex min-h-[700px] flex-col p-6 text-white md:min-h-[85svh] md:p-12">
+        <h1 className="text-3xl font-extrabold md:text-5xl lg:text-6xl pl-4 md:pl-10">비가 오는 날엔</h1>
 
         {/* 하단 영역: 우하단 워드마크/링크 + 하단 중앙 상품 상세설명 */}
-        <div className="mt-auto">
-          <div className="flex justify-end">
+        <div className="mt-auto" style={{ paddingTop: '100px' }}>
+          <div className="flex justify-end pr-15">
             <div className="text-right">
-              <p className="text-3xl font-extrabold md:text-5xl">Parami</p>
-              <div className="mt-1 flex justify-end text-xs text-white/80 md:text-sm">
+              <p className="text-5xl font-bold md:text-7xl lg:text-7xl">Parami</p>
+              <div className="mt-1 flex justify-end pr-5 text-xs text-white/75 md:text-sm">
                 <Link
                   href="/home"
                   className="underline-offset-4 hover:text-white hover:underline"

@@ -80,7 +80,7 @@ export function ImageGrid() {
               src="/images/landing/weather-snow.jpg"
               caption="눈오는 날"
               sub="기상청 공식 관측 기준"
-              aspect="aspect-[3/4]"
+              aspect="aspect-[2/3]"
               className="md:col-start-1 md:col-span-5 md:row-start-1 md:row-span-2"
             />
             <Photo
@@ -103,14 +103,14 @@ export function ImageGrid() {
               caption="한파"
               sub="최저기온 -12℃ 이하"
               aspect="aspect-square"
-              className="md:col-start-2 md:col-span-4 md:row-start-6 md:row-span-2"
+              className="md:col-start-7 md:col-span-6 md:row-start-7 md:row-span-2"
             />
             <Photo
               src="/images/landing/weather-heat.jpg"
               caption="폭염"
               sub="최고기온 33℃ 이상"
-              aspect="aspect-[5/6]"
-              className="md:col-start-7 md:col-span-6 md:row-start-7 md:row-span-3"
+              aspect="aspect-[3/4]"
+              className="md:col-start-2 md:col-span-4 md:row-start-5 md:row-span-2"
             />
           </div>
         </div>
