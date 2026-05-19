@@ -28,13 +28,13 @@ export function GoodWeather() {
           </div>
           <div>
             <p className="font-semibold text-foreground md:text-base">
-              맑은 날 보너스 (good_weather): 월 평균 3일
+              맑은 날 보너스: 월 평균 3일
             </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-sm">
               강수 {GOOD_WEATHER_CONDITIONS.rain_max}mm 이하 + PM2.5 ≤{' '}
               {GOOD_WEATHER_CONDITIONS.dust_max} + 풍속 ≤{' '}
-              {GOOD_WEATHER_CONDITIONS.wind_max}m/s 세 조건 동시 충족 시 지급 —
-              봄과 가을에 적용돼요 ({months}월)
+              {GOOD_WEATHER_CONDITIONS.wind_max}m/s — 세 조건이 모두 맞으면
+              보상금을 드려요. 봄·가을에 적용돼요 ({months}월)
             </p>
           </div>
         </div>

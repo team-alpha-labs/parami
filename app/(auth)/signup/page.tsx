@@ -125,7 +125,7 @@ export default function SignupPage() {
       <div className="rounded-2xl border bg-background p-8 md:p-10">
         <h1 className="text-2xl font-bold text-foreground md:text-3xl">계정 만들기</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          파라미 가입을 위해 기본 정보를 입력해 주세요
+          가입에 필요한 정보를 입력해 주세요
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-5">
@@ -176,7 +176,7 @@ export default function SignupPage() {
             <Input
               id="passwordConfirm"
               type="password"
-              placeholder="비밀번호를 다시 입력하세요"
+              placeholder="비밀번호를 다시 입력해 주세요"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
               required
@@ -255,12 +255,12 @@ export default function SignupPage() {
             className="w-full"
             disabled={!canSubmit}
           >
-            {submitting ? '가입 중...' : '가입 완료하기'}
+            {submitting ? '가입 중...' : '가입하기'}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          이미 계정이 있으신가요?{' '}
+          이미 가입했나요?{' '}
           <Link href="/login" className="font-medium text-primary hover:underline">
             로그인
           </Link>

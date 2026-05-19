@@ -106,7 +106,7 @@ export function WithdrawModal({
               <p className="font-semibold">구독 중 탈퇴 안내</p>
             </div>
             <p className="mt-3 pl-7 text-sm text-foreground">
-              현재 구독 중이세요. 탈퇴하면 잔여 이용 기간이 즉시 종료되고,
+              지금 구독 중이에요. 탈퇴하면 잔여 이용 기간이 즉시 종료되고,
               이미 결제한 금액은 환불되지 않아요.
             </p>
             <p className="mt-2 pl-7 text-xs text-muted-foreground">
@@ -134,7 +134,7 @@ export function WithdrawModal({
                 onChange={(e) => setAgreedLoss(e.target.checked)}
                 className="h-4 w-4 cursor-pointer rounded border-input text-primary focus:ring-ring"
               />
-              구독 잔여 기간 손실에 동의합니다.
+              구독 잔여 기간 손실에 동의해요.
             </label>
           )}
         </div>

@@ -225,7 +225,7 @@ export default function WeatherPage() {
       {/* 트리거 안내 배너 */}
       <div className="mt-6 flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
-        <span>트리거 조건이 충족되면 자동으로 보상금이 지급됩니다.</span>
+        <span>트리거 조건이 충족되면 보상금이 자동으로 들어와요.</span>
       </div>
     </div>
   )

@@ -50,7 +50,7 @@ const DUMMY_ALERTS = [
     id: 1,
     type: 'reward' as const,
     title: '집중호우 트리거 · 보상 입금',
-    desc: '강수량 62mm / 3시간 · 자동 입금됐습니다.',
+    desc: '강수량 62mm / 3시간 · 자동으로 입금됐어요.',
     time: '3일 전',
   },
   {
@@ -300,7 +300,7 @@ export default function HomePage() {
           })}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          파란 점은 트리거 발동 가능성이 높은 날입니다. 기상청 단기예보 기준 자동 계산.
+          파란 점은 트리거 가능성이 높은 날이에요. 기상청 단기예보 기준 자동 계산.
         </p>
       </div>
     </div>
