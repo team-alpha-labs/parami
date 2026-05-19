@@ -24,12 +24,12 @@ type Plan = { tier: Tier; name: string; price: number }
 
 const VALID_TIERS: Tier[] = ['basic', 'standard', 'premium']
 
-// 랜딩의 "Basic 90,700원 / Standard 158,600원 / Premium 260,600원 + a" 표기와 일관
 // 회당 보상 × 연 평균 트리거 횟수(약 113회) 마케팅 수치 — 이론적 최대 아님
+// (2026.05.19 회당 보상금 인상 반영 — 800/1400/2300 → 900/1600/2600)
 const ANNUAL_REWARD_ESTIMATE: Record<Tier, number> = {
-  basic: 90700,
-  standard: 158600,
-  premium: 260600,
+  basic: 101970,
+  standard: 181280,
+  premium: 294580,
 }
 
 // "2026. 05. 14" 디자인 표기

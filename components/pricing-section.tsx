@@ -44,9 +44,9 @@ const TIER_LABEL: Record<Tier, string> = {
 
 // 디자인의 체크리스트 — DB에 features 컬럼 없어 하드코딩
 const TIER_FEATURES: Record<Tier, string[]> = {
-  basic: ['회당 800원 보상', '월 최대 10회 수령'],
-  standard: ['회당 1,400원 보상', '월 최대 10회 수령', 'Standard 전용 이벤트'],
-  premium: ['회당 2,300원 보상', '월 최대 10회 수령', 'Premium 전용 이벤트'],
+  basic: ['회당 900원 보상', '월 최대 10회 수령'],
+  standard: ['회당 1,600원 보상', '월 최대 10회 수령', 'Standard 전용 이벤트'],
+  premium: ['회당 2,600원 보상', '월 최대 10회 수령', 'Premium 전용 이벤트'],
 }
 
 // 모든 선택하기 버튼 공통: outline 기본 → hover/group-hover 시 primary 채움
