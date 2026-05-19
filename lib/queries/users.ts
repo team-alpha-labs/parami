@@ -152,16 +152,18 @@ export async function softDeleteUser(id: number): Promise<void> {
 // 포인트 출금 최소 금액 (KRW)
 export const MIN_WITHDRAW_AMOUNT = 50000
 
-// 포인트 출금 — balance에서 MIN_WITHDRAW_AMOUNT 차감 + withdrawal_logs INSERT.
+// 포인트 출금 — 사용자가 지정한 amount를 차감 + withdrawal_logs INSERT.
+// amount는 MIN_WITHDRAW_AMOUNT(5만원) 이상 정수여야 함 (라우트에서 사전 검증).
 // MVP는 실제 송금(계좌이체) 미구현 — balance 차감만. audit log는 관리자 조회/분쟁 대응용.
 //
 // 한 트랜잭션 안에서:
-//   1) UPDATE users: balance >= 5만원일 때만 차감 (조건부 UPDATE로 atomic, 음수 잔액 불가)
+//   1) UPDATE users: balance >= amount일 때만 차감 (조건부 UPDATE로 atomic, 음수 잔액 불가)
 //      affectedRows=0 → 잔액부족 또는 탈퇴회원 → rollback + ok:false
 //   2) INSERT withdrawal_logs: 차감 성공 케이스만 기록
 //   3) SELECT balance: 같은 트랜잭션 안이라 일관된 post-차감 값 반환
 export async function withdrawPoints(
   userId: number,
+  amount: number,
 ): Promise<
   | { ok: true; balance: number; withdrawalId: number }
   | { ok: false }
@@ -172,7 +174,7 @@ export async function withdrawPoints(
 
     const [updateResult] = await conn.query<ResultSetHeader>(
       'UPDATE users SET balance = balance - ? WHERE id = ? AND deleted_at IS NULL AND balance >= ?',
-      [MIN_WITHDRAW_AMOUNT, userId, MIN_WITHDRAW_AMOUNT],
+      [amount, userId, amount],
     )
     if (updateResult.affectedRows === 0) {
       await conn.rollback()
@@ -181,7 +183,7 @@ export async function withdrawPoints(
 
     const [insertResult] = await conn.query<ResultSetHeader>(
       'INSERT INTO withdrawal_logs (user_id, amount) VALUES (?, ?)',
-      [userId, MIN_WITHDRAW_AMOUNT],
+      [userId, amount],
     )
 
     const [rows] = await conn.query<RowDataPacket[]>(
