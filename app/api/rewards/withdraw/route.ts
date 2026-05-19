@@ -15,7 +15,11 @@ export async function POST(request: NextRequest) {
         400,
       )
     }
-    return ok({ withdrawn: MIN_WITHDRAW_AMOUNT, balance: result.balance })
+    return ok({
+      withdrawn: MIN_WITHDRAW_AMOUNT,
+      balance: result.balance,
+      withdrawalId: result.withdrawalId,
+    })
   } catch (error) {
     console.error('POST /api/rewards/withdraw error:', error)
     return err('출금 처리 실패', 500)
