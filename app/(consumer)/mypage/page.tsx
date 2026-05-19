@@ -22,6 +22,7 @@ import { useMe } from '@/hooks/use-me'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { WithdrawModal } from '@/components/withdraw-modal'
+import { PointsWithdrawModal } from '@/components/points-withdraw-modal'
 import { TRIGGER_CONDITIONS } from '@/lib/conditions'
 import type { RewardRow, SubscriptionRow, TriggerType } from '@/types/db'
 
@@ -123,6 +124,7 @@ function formatDate(d: string | Date | null | undefined) {
 export default function MyPage() {
   const { data: me } = useMe()
   const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const [pointsWithdrawOpen, setPointsWithdrawOpen] = useState(false)
 
   const { data: summary } = useQuery<RewardSummary>({
     queryKey: ['rewards', 'summary'],
@@ -179,14 +181,25 @@ export default function MyPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* 누적 보상 카드 */}
+        {/* 누적 보상 카드 — 큰 숫자는 출금 가능 balance, 통계는 부제로 */}
         <div className="rounded-lg bg-primary p-6 text-primary-foreground">
-          <div className="flex items-center gap-2">
-            <Gift className="h-5 w-5" aria-hidden />
-            <p className="text-sm font-medium opacity-90">누적 보상금</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gift className="h-5 w-5" aria-hidden />
+              <p className="text-base font-medium opacity-90">누적 보상금</p>
+            </div>
+            {/* 출금하기 — primary 카드 위라 흰 배경/primary 텍스트. balance < 5만이면 disabled */}
+            <Button
+              size="sm"
+              onClick={() => setPointsWithdrawOpen(true)}
+              disabled={!me || me.balance < 50000}
+              className="bg-white text-primary hover:bg-white/90 disabled:bg-white/40 disabled:text-primary-foreground"
+            >
+              출금하기
+            </Button>
           </div>
           <p className="mt-3 text-4xl font-bold">
-            {(summary?.totalAmount ?? 0).toLocaleString()}
+            {(me?.balance ?? 0).toLocaleString()}
             <span className="ml-1 text-base font-normal opacity-90">원</span>
           </p>
           <div className="mt-6 space-y-3 text-sm">
@@ -322,6 +335,14 @@ export default function MyPage() {
         onOpenChange={setWithdrawOpen}
         hasActiveSubscription={subscription?.status === 'active'}
       />
+
+      {me && (
+        <PointsWithdrawModal
+          open={pointsWithdrawOpen}
+          onOpenChange={setPointsWithdrawOpen}
+          balance={me.balance}
+        />
+      )}
     </div>
   )
 }
