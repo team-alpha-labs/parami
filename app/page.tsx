@@ -3,10 +3,10 @@
 // 디자인: docs/figma/consumer/landing.png
 // 가이드: docs/frontend-guide.md
 //
-// 섹션 매핑 (§3/§4는 순서 swap됨 — 컴포넌트 파일 헤더 주석은 추후 정리 예정):
+// 섹션 매핑 (§2/§3 swap + §3/§4 swap 누적됨 — 컴포넌트 파일 헤더 주석은 추후 정리 예정):
 //   §1 Hero            — components/landing/hero.tsx
-//   §2 ImageGrid       — components/landing/image-grid.tsx
-//   §3 CtaExplore      — components/landing/cta-explore.tsx  (구 §4)
+//   §2 CtaExplore      — components/landing/cta-explore.tsx  (구 §3, 그 전 §4)
+//   §3 ImageGrid       — components/landing/image-grid.tsx   (구 §2)
 //   §4 Intro           — components/landing/intro.tsx        (구 §3)
 //   §5 Compare         — components/landing/compare.tsx
 //   §6 TriggerCards    — components/landing/trigger-cards.tsx
@@ -30,8 +30,8 @@ export default function LandingPage() {
   return (
     <>
       <Hero />
-      <ImageGrid />
       <CtaExplore />
+      <ImageGrid />
       <Intro />
       <Compare />
       <TriggerCards />

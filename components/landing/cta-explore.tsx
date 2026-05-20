@@ -11,7 +11,7 @@ import { FadeUp } from '@/components/motion/fade-up'
 export function CtaExplore() {
   return (
     <div id="explore">
-      <FadeUp className="px-6 py-16 md:px-12 md:py-24">
+      <FadeUp className="px-6 py-28 md:px-12 md:py-40">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-3xl font-bold leading-tight text-foreground md:text-5xl">
           쉬운 날씨 보험,
