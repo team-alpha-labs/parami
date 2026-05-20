@@ -73,7 +73,7 @@ async function main() {
   const hasProviderId = uaCols.find((c) => c.Field === 'provider_id')
   console.log(`  provider ENUM: ${providerCol?.Type}`)
   console.log(
-    `  → 'local'만 포함: ${providerCol?.Type === "enum('local')" ? 'OK' : "MISSING (mig 006 미적용 — 'kakao'/'google' 잔존)"}`,
+    `  → 'local'만 포함: ${providerCol?.Type === "enum('local')" ? 'OK' : 'MISSING (mig 006 미적용)'}`,
   )
   console.log(
     `  provider_id 컬럼: ${hasProviderId ? 'EXISTS (mig 006 미적용)' : 'DROPPED (OK)'}`,

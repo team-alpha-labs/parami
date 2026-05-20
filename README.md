@@ -148,7 +148,7 @@ mysql -h <host> -u <user> -p <db_name> < db/schema.sql
 003_users_add_deleted_at.sql
 004_create_withdrawal_logs.sql
 005_reward_amounts_increase.sql
-006_user_accounts_drop_oauth.sql
+006_user_accounts_local_only.sql
 ```
 
 DB 상태 확인:

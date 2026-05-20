@@ -1,12 +1,12 @@
--- 006: user_accounts에서 OAuth(kakao/google) 흔적 제거
--- 배경: MVP는 자체 이메일 로그인만 지원. OAuth 콜백/헬퍼/UI가 모두 미구현인데
--- ENUM과 provider_id 컬럼만 남아있어 신규 합류자가 "구현된 줄 알고 헷갈리는" 이슈.
+-- 006: user_accounts를 자체 이메일 로그인 전용 구조로 정리
+-- 배경: MVP는 자체 이메일 로그인만 지원한다. 구현되지 않은 계정 연결 구조를
+-- 스키마에서 제거해 실제 기능 범위와 DB 구조를 일치시킨다.
 -- 발표 직전 정리. 실 DB 확인 결과 provider != 'local' 행 0건 — 데이터 손실 없음.
 --
 -- 변경:
---   1) uq_provider UNIQUE 제거 (provider_id 컬럼에 의존)
---   2) provider_id 컬럼 제거
---   3) provider ENUM 축소: 'local','kakao','google' → 'local' (+DEFAULT 'local')
+--   1) 계정 연결용 UNIQUE 제거
+--   2) 외부 계정 식별자 컬럼 제거
+--   3) provider ENUM을 'local' 전용으로 축소 (+DEFAULT 'local')
 --
 -- 적용 전 데이터 검증 (운영 적용 시 필수):
 --   SELECT provider, COUNT(*) FROM user_accounts GROUP BY provider;
