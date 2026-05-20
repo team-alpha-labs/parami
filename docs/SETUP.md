@@ -73,7 +73,7 @@ npm run dev
 
 http://localhost:3000 → 페이지 보이면 성공.
 
-DB + API 확인: http://localhost:3000/api/weather/test 접속해서 JSON 응답 확인.
+DB + API 확인: http://localhost:3000/api/weather/current 접속해서 JSON 응답 확인.
 
 ---
 
