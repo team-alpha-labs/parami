@@ -6,6 +6,7 @@ import {
   GOOD_WEATHER_CONDITIONS,
 } from '@/lib/conditions'
 import type { WeatherSnapshot } from '@/lib/weather'
+import { getTodayRainTotal } from '@/lib/queries/weather'
 
 export type TriggerType =
   | 'rain'
@@ -17,10 +18,22 @@ export type TriggerType =
 
 // 같은 시점에 여러 트리거가 동시에 발동될 수 있다 (예: 비 + 미세먼지)
 // null 값은 미충족으로 본다 — 외부 API에서 값이 안 온 케이스
-export function evaluateTriggers(snap: WeatherSnapshot): TriggerType[] {
+//
+// rain만 일 누적(weather_logs SUM) 기준 — 기상청 평년 통계가 "일 강수량 N mm↑인 일수" 형태라
+// 시간당 RN1 단독 비교는 "종일 보슬비" 케이스 미발동 한계가 있었음.
+// triggered_date: KST 'YYYY-MM-DD' (lib/triggers.ts toKstDateString 결과 — 스케줄러가 넘김)
+// 호출 전제: 이번 시간의 snap이 이미 weather_logs에 INSERT된 후 호출되어야
+// SUM에 현재 시각 값이 포함됨.
+export async function evaluateTriggers(
+  snap: WeatherSnapshot,
+  triggered_date: string,
+): Promise<TriggerType[]> {
   const fired: TriggerType[] = []
 
-  if (snap.rain_mm !== null && snap.rain_mm >= TRIGGER_CONDITIONS.rain) {
+  // rain: 오늘 KST 자정~현재까지 weather_logs.rain_mm 합산
+  // 임계값(3mm)은 시간당이 아닌 일 누적 기준 — 기상청 평년 통계와 일치 (서울 월 4회)
+  const todayRainTotal = await getTodayRainTotal(triggered_date)
+  if (todayRainTotal >= TRIGGER_CONDITIONS.rain) {
     fired.push('rain')
   }
   if (snap.temp_c !== null && snap.temp_c >= TRIGGER_CONDITIONS.heat) {

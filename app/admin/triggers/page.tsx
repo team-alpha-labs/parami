@@ -22,6 +22,10 @@ type AdminTriggerRow = {
   triggered_at: Date
   triggered_date: string
   rain_mm: number | null
+  // rain 트리거는 일 누적 SUM 기준 판정 — 단일 weather_log의 rain_mm만 보면 오해
+  // (예: 마지막 시간 0.5mm인데 누적 3mm 넘어서 발동).
+  // 발동 시점까지의 누적값 (그 이후 추가 강수 제외). rain 행만 값 있음.
+  daily_rain_total: number | null
   temp_c: number | null
   wind_ms: number | null
   pm25: number | null
@@ -48,7 +52,14 @@ const TRIGGER_LABEL: Record<
 
 function getMeasuredValue(trigger: AdminTriggerRow) {
   switch (trigger.trigger_type) {
-    case 'rain': return trigger.rain_mm != null ? `${trigger.rain_mm}mm` : '—'
+    // rain은 일 누적 기준 판정 — daily_rain_total은 발동 당시까지의 누적값
+    // fallback으로 단일 weather_log rain_mm (구버전 데이터 호환)
+    case 'rain': {
+      if (trigger.daily_rain_total != null) {
+        return `${trigger.daily_rain_total.toFixed(1)}mm (발동 당시 누적)`
+      }
+      return trigger.rain_mm != null ? `${trigger.rain_mm}mm` : '—'
+    }
     case 'heat': return trigger.temp_c != null ? `${trigger.temp_c}°C` : '—'
     case 'cold': return trigger.temp_c != null ? `${trigger.temp_c}°C` : '—'
     case 'snow': return '관측'

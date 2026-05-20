@@ -98,6 +98,11 @@ export type AdminTriggerRow = {
   temp_c: number | null
   wind_ms: number | null
   pm25: number | null
+  // rain 트리거 한정 — 발동 시점까지의 일 누적 강수량 (실제 판정 시 본 값)
+  // measured_at <= triggered_at으로 컷오프 — 발동 후 추가로 온 비는 제외
+  // (오전 발동 후 오후 추가 강수가 합산되면 "왜 이 값으로 발동?" 오해 발생)
+  // dedupe 위해 (measured_at, MAX) GROUP BY 후 SUM
+  daily_rain_total: number | null
   // 이 트리거로 보상 받은 유저 수 / 총 지급액 — reward_logs 집계
   // (trigger_logs UNIQUE(trigger_type, triggered_date) 보장이라 한 trigger_log_id당 N건의 reward_logs)
   affected_users: number
@@ -107,10 +112,23 @@ export type AdminTriggerRow = {
 // 트리거 발동 내역 — 최신순, 발동 근거(날씨 스냅샷) + 보상 집계 JOIN
 // reward_logs는 LEFT JOIN(서브쿼리) — 트리거는 떴지만 아직 보상 지급 전이거나
 // 아무도 active 구독 아닌 케이스에서 0건이 자연스럽게 나옴
+// daily_rain_total: rain 트리거 한정 — 발동 시점까지의 누적 강수량.
+//   measured_at <= triggered_at 컷오프로 "발동 당시 본 값"을 정확히 재현
+//   (발동 후 추가로 온 비는 제외 — 그래야 운영자가 "왜 이 값으로 발동?" 추적 가능).
+//   다른 트리거 행에는 NULL (해당 없음).
 export async function listAllTriggers(): Promise<AdminTriggerRow[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT t.id, t.weather_log_id, t.trigger_type, t.triggered_at, t.triggered_date,
             w.rain_mm, w.temp_c, w.wind_ms, w.pm25,
+            CASE WHEN t.trigger_type = 'rain' THEN (
+              SELECT COALESCE(SUM(rain_mm), 0) FROM (
+                SELECT measured_at, MAX(rain_mm) AS rain_mm
+                FROM weather_logs
+                WHERE DATE(CONVERT_TZ(measured_at, '+00:00', '+09:00')) = t.triggered_date
+                  AND measured_at <= t.triggered_at
+                GROUP BY measured_at
+              ) d
+            ) ELSE NULL END AS daily_rain_total,
             COALESCE(r.affected_users, 0) AS affected_users,
             COALESCE(r.total_reward_amount, 0) AS total_reward_amount
      FROM trigger_logs t
@@ -126,6 +144,7 @@ export async function listAllTriggers(): Promise<AdminTriggerRow[]> {
   )
   return rows.map((r) => ({
     ...r,
+    daily_rain_total: r.daily_rain_total != null ? Number(r.daily_rain_total) : null,
     affected_users: Number(r.affected_users),
     total_reward_amount: Number(r.total_reward_amount),
   })) as AdminTriggerRow[]
