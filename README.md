@@ -8,7 +8,6 @@ Parami는 기상 데이터가 정해진 조건을 넘으면 별도 청구 없이
 | --- | --- |
 | 랜딩 | 서비스 소개, 트리거 조건, 월별 트리거 차트, 요금제 안내 |
 | 인증 | 이메일 회원가입/로그인, JWT 쿠키 세션, 로그아웃, 회원 탈퇴 |
-| OAuth | 카카오/구글 콜백 라우트 스캐폴드 |
 | 구독 | Basic/Standard/Premium 플랜, 티어 변경 예약, 구독 해지, 만료 처리 |
 | 결제 | Toss Payments 단건 결제 승인, 금액 검증, DB 실패 시 자동 환불 시도 |
 | 날씨 | 기상청/에어코리아 API 기반 현재 날씨 수집 |
@@ -133,15 +132,6 @@ cp .env.local.example .env.local
 | `TOSS_SECRET_KEY` | 서버 결제 승인용 Toss secret key |
 | `SCHEDULER_SECRET` | 스케줄러 API 보호용 Bearer secret |
 
-선택/추후 사용:
-
-| 이름 | 설명 |
-| --- | --- |
-| `KAKAO_CLIENT_ID` / `KAKAO_CLIENT_SECRET` | 카카오 OAuth |
-| `KAKAO_REDIRECT_URI` | 기본값 `http://localhost:3000/api/auth/kakao/callback` |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | 구글 OAuth |
-| `GOOGLE_REDIRECT_URI` | 기본값 `http://localhost:3000/api/auth/google/callback` |
-
 ### 3. DB 준비
 
 `db/schema.sql`을 MySQL에 적용합니다. 이 파일은 기본 테이블과 `plans` seed를 포함합니다.
@@ -158,6 +148,7 @@ mysql -h <host> -u <user> -p <db_name> < db/schema.sql
 003_users_add_deleted_at.sql
 004_create_withdrawal_logs.sql
 005_reward_amounts_increase.sql
+006_user_accounts_local_only.sql
 ```
 
 DB 상태 확인:
@@ -235,8 +226,6 @@ API 응답은 기본적으로 아래 envelope를 사용합니다.
 | `GET` | `/api/auth/me` | 내 정보 조회 |
 | `PATCH` | `/api/auth/profile` | 내 프로필 수정 |
 | `DELETE` | `/api/auth/withdraw` | 회원 탈퇴 |
-| `GET` | `/api/auth/kakao/callback` | 카카오 OAuth 콜백 |
-| `GET` | `/api/auth/google/callback` | 구글 OAuth 콜백 |
 
 ### 결제/구독
 
@@ -254,7 +243,6 @@ API 응답은 기본적으로 아래 envelope를 사용합니다.
 | Method | Endpoint | 설명 |
 | --- | --- | --- |
 | `GET` | `/api/weather/current` | 현재 날씨 |
-| `GET` | `/api/weather/test` | 날씨 API 테스트 |
 | `GET` | `/api/rewards/me` | 내 보상 내역 |
 | `GET` | `/api/rewards/summary` | 내 보상 요약 |
 | `POST` | `/api/rewards/withdraw` | 포인트 출금 요청 |
@@ -290,7 +278,7 @@ curl -X POST http://localhost:3000/api/scheduler/weather-check \
 | 테이블 | 역할 |
 | --- | --- |
 | `users` | 회원, 권한, 잔액, soft delete |
-| `user_accounts` | local/kakao/google 로그인 계정 |
+| `user_accounts` | 로그인 계정 (MVP는 자체 이메일 로그인만) |
 | `plans` | basic/standard/premium 가격표 |
 | `subscriptions` | 구독 상태, 현재 티어, 다음 결제일, 변경 예약 |
 | `payments` | Toss 결제 내역 |
@@ -431,6 +419,6 @@ style/영역-작업명
 | --- | --- |
 | 우석 | 스케줄러, 트리거, 보상 지급, 관리자 조회 API |
 | 소라 | 결제, 구독, 보상 조회 |
-| 영현 | 인증, OAuth |
+| 영현 | 인증 |
 | 여진 | 소비자 페이지 |
 | 명진 | 관리자 페이지 |

@@ -30,6 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# codex CLI dev server logs (port별로 .codex-dev-3000.log, .codex-dev-3001.log 등)
+.codex-dev-*.log
+
 # env files (can opt-in for committing if needed)
 .env*
 !.env.local.example

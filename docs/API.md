@@ -47,10 +47,11 @@ https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty
 
 dev 서버 띄운 뒤:
 ```
-http://localhost:3000/api/weather/test
+http://localhost:3000/api/weather/current
 ```
 
-KMA + 에어코리아 응답 둘 다 잘 뜨면 OK.
+KMA + 에어코리아 응답 둘 다 잘 뜨면 OK
+(rain_mm/temp_c/wind_ms는 KMA, pm25/pm10은 에어코리아).
 
 ---
 
