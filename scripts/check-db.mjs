@@ -66,6 +66,19 @@ async function main() {
     `  → expired 포함: ${statusCol?.Type?.includes('expired') ? 'OK' : 'MISSING (mig 002 미적용)'}`,
   )
 
+  // 2b) user_accounts ENUM 검증 (마이그레이션 006 반영 여부)
+  console.log('\n=== user_accounts schema ===')
+  const [uaCols] = await pool.query('SHOW COLUMNS FROM user_accounts')
+  const providerCol = uaCols.find((c) => c.Field === 'provider')
+  const hasProviderId = uaCols.find((c) => c.Field === 'provider_id')
+  console.log(`  provider ENUM: ${providerCol?.Type}`)
+  console.log(
+    `  → 'local'만 포함: ${providerCol?.Type === "enum('local')" ? 'OK' : "MISSING (mig 006 미적용 — 'kakao'/'google' 잔존)"}`,
+  )
+  console.log(
+    `  provider_id 컬럼: ${hasProviderId ? 'EXISTS (mig 006 미적용)' : 'DROPPED (OK)'}`,
+  )
+
   // 3) plans 시드 데이터
   console.log('\n=== plans seed ===')
   const [plans] = await pool.query('SELECT tier, name, price FROM plans ORDER BY price')

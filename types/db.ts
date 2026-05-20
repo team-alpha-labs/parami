@@ -10,8 +10,7 @@ export type UserRow = {
 export type UserAccountRow = {
   id: number
   user_id: number
-  provider: 'local' | 'kakao' | 'google'
-  provider_id: string | null
+  provider: 'local'
   password: string | null
   created_at: Date
 }

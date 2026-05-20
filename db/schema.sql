@@ -18,12 +18,12 @@ CREATE TABLE users (
 CREATE TABLE user_accounts (
   id          INT          NOT NULL AUTO_INCREMENT,
   user_id     INT          NOT NULL,
-  provider    ENUM('local','kakao','google') NOT NULL,
-  provider_id VARCHAR(100) NULL,
+  -- MVP는 자체 이메일 로그인만 지원 (OAuth는 미구현)
+  -- provider ENUM은 향후 확장 시 'kakao','google' 등을 마이그레이션으로 추가
+  provider    ENUM('local') NOT NULL DEFAULT 'local',
   password    VARCHAR(255) NULL,
   created_at  DATETIME     NOT NULL DEFAULT NOW(),
   PRIMARY KEY (id),
-  UNIQUE KEY uq_provider (provider, provider_id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
