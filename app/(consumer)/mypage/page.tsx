@@ -64,7 +64,7 @@ const TRIGGER_DISPLAY: Array<{
     key: 'good_weather',
     label: '맑은 날 보너스',
     icon: Sparkles,
-    condition: 'good_weather',
+    condition: '봄, 가을 적용(강수 1mm 이하, PM30 이하, 풍속 5m/s 이하)',
     bg: 'bg-trigger-good/10',
     text: 'text-trigger-good',
   },
