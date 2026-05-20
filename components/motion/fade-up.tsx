@@ -1,13 +1,14 @@
 'use client'
 
-// whileInView 대신 useInView 훅으로 명시 제어.
-// 기존 whileInView + once:true 조합은 SSR/hydration 직후 IntersectionObserver 등록 타이밍 race로
-// 트리거를 놓치면 once:true라 다시 발화 안 함 → 섹션이 opacity:0으로 영구 고정되는 이슈 발생
-// (시크릿 모드 신규 진입 시 §2~ 모든 섹션이 안 보였던 원인).
-// useInView는 마운트 시점에 현재 viewport 상태를 동기적으로 평가하므로 race 안 남.
+// 마운트 시 한 번 페이드인. (이전: whileInView/useInView 기반 스크롤 진입 트리거 사용했으나
+// SSR/hydration 직후 IntersectionObserver 등록 타이밍 race로 옵저버 callback이 발화 안 해
+// 섹션이 opacity:0으로 영구 고정되는 이슈가 직접 진입 케이스에서 재현됨 — IO callback 자체를 제거.)
+//
+// 트레이드오프: 스크롤 진입 트리거 손실 → fold 아래 섹션도 페이지 로드 시 함께 페이드인.
+// 사용자가 스크롤해서 도달했을 땐 이미 final 상태라 시각적 문제 없음.
 
-import { motion, useReducedMotion, useInView } from 'framer-motion'
-import { useRef, type ReactNode } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+import type { ReactNode } from 'react'
 
 interface FadeUpProps {
   children: ReactNode
@@ -17,8 +18,6 @@ interface FadeUpProps {
 
 export function FadeUp({ children, delay = 0, className }: FadeUpProps) {
   const reduce = useReducedMotion()
-  const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-10%' })
 
   if (reduce) {
     return <div className={className}>{children}</div>
@@ -26,10 +25,9 @@ export function FadeUp({ children, delay = 0, className }: FadeUpProps) {
 
   return (
     <motion.div
-      ref={ref}
       className={className}
       initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : undefined}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: 'easeOut' }}
     >
       {children}
