@@ -65,12 +65,12 @@ export function Hero() {
             </div>
           </div>
 
-          {/* 하단 중앙 — 상품 상세설명 (§2 ImageGrid 앵커) */}
+          {/* 하단 중앙 — 다음 섹션으로 스크롤 (§2 CtaExplore 앵커) */}
           {/* native <a>로 사용 — Next.js <Link>의 hash-only navigation 불안정 우회 */}
           <div className="mt-6 flex justify-center md:mt-10">
             <motion.a
-              href="#image-grid"
-              aria-label="상품 상세설명으로 스크롤"
+              href="#explore"
+              aria-label="다음 섹션으로 스크롤"
               className="inline-flex items-center justify-center hover:opacity-80"
               animate={shouldReduceMotion ? undefined : { y: [0, 8, 0] }}
               transition={
