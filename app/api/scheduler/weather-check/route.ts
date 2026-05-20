@@ -38,8 +38,9 @@ export async function POST(request: NextRequest) {
     // 4) 트리거 판정 + trigger_logs INSERT
     // 같은 시점에 여러 트리거가 동시 발동 가능 (예: 비+미세먼지)
     // UNIQUE(trigger_type, triggered_date)로 하루 1회만 신규 INSERT
-    const firedTypes = evaluateTriggers(snap)
+    // rain은 일 누적 기준이라 weather_logs INSERT 직후(3단계) 호출돼야 SUM에 현재 값 포함
     const triggered_date = toKstDateString(snap.measured_at)
+    const firedTypes = await evaluateTriggers(snap, triggered_date)
     const triggers = await Promise.all(
       firedTypes.map(async (trigger_type) => {
         const r = await insertTriggerLog({

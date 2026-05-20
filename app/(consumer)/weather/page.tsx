@@ -22,6 +22,8 @@ type WeatherSnapshot = {
   measured_at: string
   location: string
   rain_mm: number | null
+  // KST 자정~현재까지 weather_logs.rain_mm SUM. rain 트리거 판정 기준 (백엔드와 동일).
+  today_rain_total: number
   temp_c: number | null
   wind_ms: number | null
   pty: number | null
@@ -105,7 +107,8 @@ export default function WeatherPage() {
   }
 
   // 트리거 임계값 대비
-  const rainTriggered = (data.rain_mm ?? 0) >= TRIGGER_CONDITIONS.rain
+  // rain은 일 누적 기준 (백엔드 lib/triggers.ts와 동일) — 종일 보슬비도 누적 3mm 넘으면 충족
+  const rainTriggered = data.today_rain_total >= TRIGGER_CONDITIONS.rain
   const heatTriggered = (data.temp_c ?? -999) >= TRIGGER_CONDITIONS.heat
   const coldTriggered = (data.temp_c ?? 999) <= TRIGGER_CONDITIONS.cold
   const tempTriggered = heatTriggered || coldTriggered
@@ -155,9 +158,9 @@ export default function WeatherPage() {
       <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
         <WeatherTile
           icon={CloudRain}
-          label="강수"
-          value={fmt(data.rain_mm, 'mm')}
-          sub={`트리거 ${TRIGGER_CONDITIONS.rain}mm`}
+          label="오늘 누적 강수"
+          value={fmt(data.today_rain_total, 'mm')}
+          sub={`트리거 일 누적 ${TRIGGER_CONDITIONS.rain}mm`}
           triggered={rainTriggered}
         />
         <WeatherTile

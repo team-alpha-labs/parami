@@ -1,4 +1,7 @@
 export const TRIGGER_CONDITIONS = {
+  // rain: KST 일 누적 mm (weather_logs.rain_mm 자정~현재 SUM)
+  //   시간당 RN1 단독 비교는 "종일 보슬비 미발동" 한계가 있어 일 누적으로 전환.
+  //   임계값 3mm는 기상청 평년 통계(서울 일 강수 3mm↑ 월 4회)와 일치.
   rain: 3,
   heat: 33,
   cold: -12,
