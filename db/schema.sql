@@ -18,12 +18,10 @@ CREATE TABLE users (
 CREATE TABLE user_accounts (
   id          INT          NOT NULL AUTO_INCREMENT,
   user_id     INT          NOT NULL,
-  provider    ENUM('local','kakao','google') NOT NULL,
-  provider_id VARCHAR(100) NULL,
+  provider    ENUM('local') NOT NULL,
   password    VARCHAR(255) NULL,
   created_at  DATETIME     NOT NULL DEFAULT NOW(),
   PRIMARY KEY (id),
-  UNIQUE KEY uq_provider (provider, provider_id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

@@ -121,7 +121,6 @@ parami/
 │   ├── auth-server.ts        # 서버 컴포넌트용 getServerSession (next/headers cookies 기반)
 │   ├── client.ts             # 프론트 API fetcher — {success,data} 자동 처리 + ApiError throw
 │   ├── utils.ts              # cn 헬퍼 (clsx + tailwind-merge, shadcn 표준)
-│   ├── oauth.ts              # 카카오 / 구글 OAuth 헬퍼 (스캐폴드)
 │   ├── weather.ts            # 기상청 + 에어코리아 API 호출·파싱
 │   ├── conditions.ts         # 트리거 조건값 상수 (하드코딩)
 │   ├── plans.ts              # 구독 가격표 DB 조회
@@ -157,10 +156,6 @@ GET    /api/auth/me               # 내 정보 조회
 PATCH  /api/auth/profile          # 내 정보 수정 (이름)
 DELETE /api/auth/withdraw         # 회원 탈퇴 (cascade)
 
-[ OAuth 콜백 ]  ⏳ 추후 (라우트 스캐폴드만 있고 키 미설정)
-GET    /api/auth/kakao/callback
-GET    /api/auth/google/callback
-
 [ 결제/구독 ]
 GET   /api/plans                       # 티어 목록 조회                ✅ 구현됨
 POST  /api/payments/confirm            # 토스 결제 승인 + 구독 생성    ✅ 구현됨
@@ -194,7 +189,7 @@ GET /api/admin/rewards          # 보상 지급 내역                       ✅
 | --- | --- | --- |
 | 백1 (팀장) | 우석 | 스케줄러 + 트리거 + 보상 지급 + 관리자 조회 API |
 | 백2 | 소라 | 결제 + 구독 + 보상 조회 |
-| 백3 | 영현 | 인증 (자체 + OAuth) |
+| 백3 | 영현 | 인증 (자체 JWT) |
 | 프1 | 여진 | 소비자 페이지 전체 |
 | 프2 | 명진 | 관리자 페이지 |
 
@@ -231,7 +226,7 @@ export const MAX_REWARD_PER_MONTH = 10
 
 ```
 users              # 회원 (balance 컬럼으로 포인트 관리)
-user_accounts      # 로그인 방식 (local / kakao / google)
+user_accounts      # 로그인 방식 (local 전용 — 소셜 로그인 미지원)
 plans              # 구독 가격표 (basic / standard / premium, 가격·설명)
 subscriptions      # 구독 (1인 1active, 현재 티어 및 구독 상태 관리)
 payments           # 결제 내역 (toss_payment_key NULL 허용)
@@ -342,16 +337,6 @@ DB_NAME=
 
 # JWT
 JWT_SECRET=
-
-# 카카오 OAuth (추후 사용 — 현재 미설정)
-KAKAO_CLIENT_ID=
-KAKAO_CLIENT_SECRET=
-KAKAO_REDIRECT_URI=http://localhost:3000/api/auth/kakao/callback
-
-# 구글 OAuth (추후 사용 — 현재 미설정)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
 
 # 기상청 API
 KMA_API_KEY=
